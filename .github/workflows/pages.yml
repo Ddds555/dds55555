@@ -1,0 +1,29 @@
+# Сайт https://ddds555.github.io/dds55555/ публикуется из ветки gh-pages.
+# Когда в main меняется собранное приложение (папка docs/), этот workflow кладёт docs/ в корень gh-pages,
+# и GitHub Pages сам пересобирает сайт. Ветку gh-pages руками не правим: она каждый раз собирается заново из docs/.
+name: Сайт из docs в gh-pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: docs/ -> gh-pages
+        run: |
+          git subtree split --prefix=docs -b gh-pages-build
+          git push --force origin gh-pages-build:gh-pages
