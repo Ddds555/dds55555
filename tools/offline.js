@@ -199,6 +199,55 @@ async function importText(text) {
     <p class="muted small" style="margin:0">Прогресс на этом устройстве заменится копией. Если передумаешь - «Вернуть как было» в «Моих данных».</p>
     <div class="row"><button class="btn primary" data-a="importYes">${ic('check', 18)} Загрузить</button><button class="btn" data-a="closeSheet">Отмена</button></div>`);
 }
+/* ---- жалобы «Здесь ошибка?»: в офлайне их никто не проверяет сам - список копируется для Claude,
+   а ответы Claude приходят с обновлением приложения (tools/report-checks.json -> REPORT_CHECKS) ---- */
+function reportVerdict(r) {
+  if (!r) return null;
+  const c = REPORT_CHECKS[r.id];
+  // ответ - на жалобы, поданные до проверки; если она с ответом не согласилась (after), нужен ответ новее
+  if (c && (!r.d || r.d <= c.d) && (!r.after || c.d > r.after)) return { ok: !!c.ok, why: c.why || '', d: c.d };
+  if (r.v) return { ok: !!r.v.ok, why: [r.v.why, r.v.fix].filter(Boolean).join(' '), d: r.v.d }; // проверка в версии в Claude
+  return null;
+}
+const reportsWaiting = () => (state.reports || []).filter(r => !reportVerdict(r));
+function reportsText() {
+  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 70» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
+    const it = getItem(r.id);
+    return `${i + 1}. [${r.id}] ${it ? `${itemLabel(it)} - ${questionText(it)}` : 'задание не найдено'}${it && it.o && it.type !== 'stress' ? `\n   Варианты: ${it.o.join(' | ')}` : ''}\n   Мой ответ: ${r.my || '-'} · ответ программы: ${it ? correctText(it) : '-'} · ${r.d || ''}${r.after ? ` · повторно: не согласна с ответом от ${r.after}` : ''}`;
+  }).join('\n');
+}
+function reportsCardHTML() {
+  const n = (state.reports || []).length, w = reportsWaiting().length;
+  return `<section class="card"><div class="row sb"><h2 class="h2">Жалобы на задания</h2><span class="kicker">${n ? (w ? `ждут проверки: ${w}` : 'все проверены') : 'нет'}</span></div><p class="muted small" style="margin:0">Всё, где ты нажала «Здесь ошибка?», и ответ Claude по каждой жалобе.</p><button class="btn block" data-a="openReports">Открыть жалобы</button></section>`;
+}
+function vReports() {
+  const list = [...(state.reports || [])].sort((a, b) => String(b.d || '').localeCompare(String(a.d || ''))), wait = reportsWaiting().length;
+  const card = r => {
+    const it = getItem(r.id), v = reportVerdict(r);
+    const [col, st] = v ? (v.ok ? ['var(--good)', 'Проверено: в задании всё верно'] : ['var(--violet)', 'Проверено: ты права - в задании была ошибка, исправлено']) : ['var(--gold)', 'Ждёт проверки'];
+    return `<div class="err" style="border-left-color:${col}"><div class="kicker">${it ? esc(itemLabel(it)) : 'Задание'}${r.d ? ' · ' + fmtD(r.d) : ''}</div>
+      <div class="q">${it ? esc(questionText(it)) : `Этого задания (${esc(r.id)}) больше нет в программе`}</div>
+      <div class="small">${r.my ? `Твой ответ: <b>${esc(r.my)}</b>` : ''}${r.my && it ? ' · ' : ''}${it ? `ответ программы: <b>${esc(correctText(it))}</b>` : ''}</div>
+      <div class="small" style="font-weight:800;color:${col}">${st}</div>${v && v.why ? `<div class="small exp" style="line-height:1.55">${fmtRich(v.why, false)}</div>` : ''}</div>`;
+  };
+  return `${ui.stack.length ? `<button class="back" data-a="back">${ic('left', 18)} Назад</button>` : ''}
+  <header class="stack" style="gap:6px"><div class="kicker">Здесь ошибка?</div><h1 class="h1">Жалобы на задания</h1><p class="muted" style="margin:0">Здесь всё, где ты нажала «Здесь ошибка?». Без интернета задания никто не проверяет сам: когда будет связь, скопируй жалобы и отправь их Claude. Claude проверит по правилам ФИПИ, исправит ошибки, и после обновления приложения у каждой жалобы появится ответ.</p></header>
+  <section class="card"><div class="row sb"><div><div class="big">${wait}</div><div class="muted small">ждут проверки</div></div><div style="text-align:right"><div class="big" style="color:var(--good)">${list.length - wait}</div><div class="muted small">проверено</div></div></div>
+    ${wait ? `<button class="btn primary block" data-a="copyReports">Скопировать для Claude: ${wait}</button>` : `<p class="muted small" style="margin:0">${list.length ? 'Все жалобы проверены.' : 'Жалоб пока нет. Если в задании что-то не так - после ответа нажми «Здесь ошибка?».'}</p>`}</section>
+  ${list.length ? `<section class="stack">${list.map(card).join('')}</section>` : ''}`;
+}
+askHTML = function (it) { // в офлайне: только жалоба и её статус (вопросов к Claude нет)
+  const r0 = state.reports?.find(r => r.id === it.id), v = reportVerdict(r0);
+  const rep = !r0 ? '<button class="btn sm ghost" data-a="report">Здесь ошибка?</button>'
+    : v ? `<span class="muted small">${v.ok ? 'Проверено: в задании всё верно' : 'Проверено: ошибка в задании исправлена'}</span><button class="btn sm ghost" data-a="reportAgain">Всё равно ошибка?</button>`
+    : '<span class="muted small">Жалоба записана - ждёт проверки</span>';
+  return `<p class="muted small" style="margin:0">В офлайн-версии вопросов к Claude нет - смотри разбор и теорию выше.</p><div class="row">${rep}<button class="linkbtn" data-a="openReports">Жалобы →</button></div>`;
+};
+const weakErrLink0 = weakErrLink;
+weakErrLink = () => { // в «Ошибках» рядом с «Подтянуть» и «Избранным» - ссылка на жалобы
+  const n = (state.reports || []).length, w = reportsWaiting().length;
+  return weakErrLink0().replace(/<\/div>\s*$/, `<button class="linkbtn" data-a="openReports">⚑ Жалобы${n ? (w ? `: ждут проверки ${w}` : ': все проверены') : ''} →</button></div>`);
+};
 function dataLinkHTML() {
   const b = state.backupAt, busy = Object.keys(state.ans).length > 0, old = !b || daysTo(b) < -7;
   const t = b ? (old && busy ? 'пора сохранить копию' : `копия от ${fmtD(b)}`) : busy ? 'сохранить копию прогресса' : 'мои данные';
@@ -223,6 +272,7 @@ function vData() {
     <label class="btn primary block" for="impFile">${ic('plus', 18)} Выбрать файл</label><input type="file" id="impFile" accept=".json,application/json,text/plain" hidden>
     <details class="fbd"><summary>Вставить копию текстом</summary><form class="stack" data-f="impCode" style="margin-top:8px"><textarea class="codebox" id="impCode" placeholder="Вставь сюда текст копии"></textarea><button class="btn block">Загрузить из текста</button></form></details>
     ${before ? `<button class="btn ghost block" data-a="importUndo">${ic('repeat', 18)} Вернуть как было до загрузки (${fmtD(before.d)})</button>` : ''}</section>
+  ${reportsCardHTML()}
   ${single || isIOS() ? '' : `<section class="card"><h2 class="h2">Приложение одним файлом</h2><p class="muted small" style="margin:0">Запасной вариант для компьютера: один HTML-файл, открывается двойным щелчком в любом браузере, интернет не нужен. Прогресс у файла свой - переноси его копией.</p><a class="btn block" href="ege70-offline.html" download="ege70-offline.html">Скачать файл приложения</a></section>`}
   <section class="card"><h2 class="h2">Как поставить на телефон</h2>
     <p style="margin:0"><b>iPhone:</b> открой ссылку в Safari → «Поделиться» → «На экран «Домой»».</p>
@@ -232,6 +282,18 @@ function vData() {
 Object.assign(A, {
   openData: () => { closeSheet(); go({ v: 'data' }); },
   openGifts: () => go({ v: 'gifts' }),
+  openReports: () => { closeSheet(); go({ v: 'reports' }); },
+  copyReports: async () => {
+    const t = reportsText();
+    try { await navigator.clipboard.writeText(t); toast('Скопировала - вставь в чат с Claude'); }
+    catch { openSheet(`<h2 class="h2">Скопируй и отправь Claude</h2><textarea class="codebox" id="repBox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`); }
+  },
+  reportAgain: () => { // ответ уже был, но она всё ещё видит ошибку - жалоба снова ждёт проверки
+    const id = ses?.ids?.[ses.i], r = id && state.reports?.find(x => x.id === id); if (!r) return;
+    const c = REPORT_CHECKS[id]; if (c) r.after = c.d;
+    r.d = today(); r.my = String(ses.last?.my || r.my || '').slice(0, 60); delete r.v;
+    save(); render(); toast('Записала - жалоба снова ждёт проверки');
+  },
   reload: () => location.reload(),
   finRead: b => {
     const id = b.dataset.id; if (!finWork(id)) return; state.readW = state.readW || {};
