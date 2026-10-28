@@ -1,0 +1,15 @@
+/* офлайн-версия: тест по произведению, мои данные, обновление приложения */
+.wq{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;color:var(--ink);line-height:1.35}
+.wq:last-child{border-bottom:0}
+.wq b{font-weight:800}
+.wqs{font:700 15px var(--display);color:var(--muted);white-space:nowrap}
+.okmark{display:inline-block;padding:1px 8px;border-radius:99px;background:var(--good-soft);color:var(--good);font:800 12px var(--body);vertical-align:2px}
+.linkbtn.inl{font-size:inherit;padding:0;display:inline}
+label.btn{cursor:pointer}
+.tbl.plain td:last-child{color:var(--ink)}
+.codebox{width:100%;min-height:120px;border:2px solid var(--line);border-radius:14px;background:var(--paper-2);padding:10px 12px;font:500 13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);word-break:break-all;resize:vertical}
+#upd{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:45;background:var(--ink);color:var(--bg);border-radius:16px;padding:8px 8px 8px 16px;display:flex;gap:12px;align-items:center;font-weight:800;box-shadow:var(--shadow);max-width:calc(100% - 32px);white-space:nowrap}
+/* «Сочинение» - самое длинное слово на панели: его колонка пошире, на узких экранах шрифт вкладок чуть меньше */
+#tabs{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) repeat(4,minmax(0,1fr))}
+@media (max-width:400px){.tab{font-size:11px}}
+@media (max-width:340px){.tab{font-size:10px;letter-spacing:-.01em}}
