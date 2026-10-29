@@ -13,3 +13,12 @@ label.btn{cursor:pointer}
 #tabs{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) repeat(4,minmax(0,1fr))}
 @media (max-width:400px){.tab{font-size:11px}}
 @media (max-width:340px){.tab{font-size:10px;letter-spacing:-.01em}}
+/* разделы сочинения (6 штук) - в две строки на телефоне */
+.seg.many button{padding:10px 8px}
+/* подробный пересказ и полный текст в карточке произведения */
+details.card.fsec .sheet-note{box-shadow:none;border:1.5px solid var(--line);margin-top:10px}
+.fulltext{display:grid;gap:12px;margin-top:10px;font-size:18px;line-height:1.75}
+.fulltext p{margin:0;text-indent:1.2em}
+/* «Не вспомнила / Вспомнила»: в карточке вопроса слова переносятся где угодно - на этих кнопках слово не рвём */
+.qcard [data-a="self"]{overflow-wrap:normal;padding:12px 10px;gap:6px}
+@media (max-width:350px){.qcard [data-a="self"] svg{display:none}}
