@@ -39,13 +39,32 @@ const finNameP = w => `«${w.title}»${w.authorShort ? ` (${w.authorShort})` : '
     const r = rng(hashStr(id)), o = pickN([right, ...pickN(w, 3, r)], 4, r);
     put(kind, { id, type: 'choice', q, o, a: o.indexOf(right), ex, work });
   };
+  /* новые произведения (tools/content/extra-works.js): в список, к темам, «кто автор» и «чей герой» - как у остальных.
+     Герой с q: false (например, безымянный «Профессор») в тесты не идёт: вопрос о нём был бы неоднозначным */
+  const fresh = EXTRA_WORKS.filter(w => w && w.id && w.title && !finWork(w.id));
+  for (const w of fresh) FIN_W.push(w);
+  for (const [tid, ids] of Object.entries(EXTRA_TOPIC_WORKS)) { const t = finTopic(tid); if (t) t.works = uniq([...(t.works || []), ...ids]); }
+  const authors = uniq(FIN_W.map(w => w.author));
+  for (const w of fresh) {
+    const gy = [w.genre, w.year].filter(Boolean).join(', ');
+    choice('a', 'fin-a-' + w.id, `Кто автор произведения «${w.title}»? На сочинении автора называют полностью.`, w.author, authors.filter(a => a !== w.author), `«${w.title}»${gy ? ` (${gy})` : ''} - автор **${w.author}**.`, w.id);
+    (w.heroes || []).forEach((h, i) => {
+      if (!h || !h.name || h.q === false) return;
+      const other = FIN_W.filter(x => x.id !== w.id && !(x.heroes || []).some(y => y && y.name === h.name)).map(finWorkName);
+      choice('h', `fin-h-${w.id}-${i + 1}`, `Из какого произведения герой: ${h.name}?`, finWorkName(w), other, `**${h.name}**${h.who ? ` - ${h.who}` : ''}. Это ${finWorkName(w)}.`, w.id);
+    });
+  }
+  for (const x of EXTRA_QUIZ) if (x.id && x.q && Array.isArray(x.o) && x.o[x.a] != null) put('q', { ...x, type: 'choice' });
+  /* тренажёр слов (вкладка «Слова»): вспомнить близкие слова - потом проверить себя. В общий тест по книгам не входит */
+  FIN_KIND.v = 'синонимы';
+  for (const w of FINAL_WORDS) if (w.id && !ITEMS['fin-v-' + w.id]) addItem('fin:v', { id: 'fin-v-' + w.id, type: 'card', subj: 'fin', task: 'v', exc: false, q: `«${w.w}» - что это значит и какими близкими словами заменить, чтобы не повторяться? Назови хотя бы три.`, a: w.syn.join(', '), why: `**Что это:** ${w.def}\n**Противоположные:** ${w.ant.join(', ')}\n**Готовые сочетания:** ${w.ph.join('; ')}` });
   const fam = g => /роман/.test(g) ? 'R' : /повесть/.test(g) ? 'P' : /рассказ/.test(g) ? 'S' : /пьеса|драма|комедия|трагедия/.test(g) ? 'D' : /поэма/.test(g) ? 'Po' : /стихотворени/.test(g) ? 'St' : g;
   const genres = uniq(FIN_W.map(w => w.genre));
   for (const w of FIN_W) {
     const heroes = w.heroes || [], who = heroes.filter(h => h && h.name && h.who).map(h => h.who);
     const otherWho = FIN_W.filter(x => x.id !== w.id).flatMap(x => (x.heroes || []).filter(h => h && h.who).map(h => h.who));
     heroes.forEach((h, i) => { // кто есть кто: неверные варианты - другие герои этой же книги
-      if (!h || !h.name || !h.who) return;
+      if (!h || !h.name || !h.who || h.q === false) return;
       const id = `fin-r-${w.id}-${i + 1}`, same = who.filter(x => x !== h.who);
       const wrong = same.length >= 3 ? same : [...same, ...pickN(otherWho, 3 - same.length, rng(hashStr(id + ':x')))];
       choice('r', id, `«${w.title}»: ${h.name} - это…`, h.who, wrong, `**${h.name}** - ${h.who}.`, w.id);
@@ -71,7 +90,7 @@ const finNameP = w => `«${w.title}»${w.authorShort ? ` (${w.authorShort})` : '
   const guess = it => { const q = String(it?.q || '').toLowerCase().replace(/ё/g, 'е'); return FIN_W.filter(w => q.includes('«' + st(w.title))).map(w => w.id); };
   const pools = {}, add = (wid, id) => { if (!finWork(wid) || !ITEMS[id]) return; const p = pools[wid] = pools[wid] || []; if (!p.includes(id)) p.push(id); };
   for (const k of ['a', 'g', 'r', 'k']) for (const id of TASK_ITEMS['fin:' + k] || []) add(ITEMS[id].work, id);
-  for (const id of TASK_ITEMS['fin:q'] || []) for (const wid of FQ_WORKS[id] || guess(ITEMS[id])) add(wid, id);
+  for (const id of TASK_ITEMS['fin:q'] || []) for (const wid of FQ_WORKS[id] || ITEMS[id].works || guess(ITEMS[id])) add(wid, id);
   for (const w of FIN_W) TASK_ITEMS['finw:' + w.id] = pools[w.id] || [];
 }
 
@@ -123,8 +142,21 @@ finWorkHTML = function (w) {
   const top = `<div class="row">${finReadBtn(w)}${n ? `<button class="btn sm violet" data-a="finWorkQuiz" data-id="${esc(w.id)}">${ic('play', 16)} Тест: ${m.seen ? `${m.ok} из ${m.total}` : `${n} ${plural(n, 'вопрос', 'вопроса', 'вопросов')}`}</button>` : ''}</div>`;
   const i = h.indexOf('</p>'); // первый абзац - автор: кнопки сразу под ним, до списка разделов
   if (i >= 0) h = h.slice(0, i + 4) + top + h.slice(i + 4);
+  // «Сюжет» -> «Кратко», а сразу под ним - подробный пересказ и полный текст
+  const plotH = '<h2 class="h2">Сюжет</h2>', p = h.indexOf(plotH), more = finMoreHTML(w);
+  if (p >= 0) { h = h.replace(plotH, '<h2 class="h2">Кратко</h2>'); const e = h.indexOf('</section>', p); h = e >= 0 ? h.slice(0, e + 10) + more + h.slice(e + 10) : h + more; }
+  else h += more;
   return h + finWorkQuizCard(w);
 };
+/* свёрнутый раздел, который остаётся открытым, когда экран перерисовывается (ui.finOpen - как у разделов тем) */
+const finDet = (key, title) => `<details class="card fsec" data-fd="${esc(key)}" ${ui.finOpen?.[key] ? 'open' : ''}><summary style="cursor:pointer">${title}</summary>`;
+/* подробный пересказ по частям (FINAL_DETAILS) и полный текст небольших произведений (FINAL_TEXTS) - свёрнуты, чтобы карточка не была бесконечной */
+function finMoreHTML(w) {
+  const parts = FINAL_DETAILS[w.id] || [], T = FINAL_TEXTS[w.id];
+  const det = parts.length ? `${finDet('more-' + w.id, 'Подробно - по главам и эпизодам')}<p class="muted small" style="margin:6px 0 0">Чтобы точно не перепутать, кто что сделал и в каком порядке. Жирным - эпизоды, которые чаще всего берут в аргументы.</p>${parts.map(x => `<article class="sheet-note"><h3>${esc(x.h)}</h3><p>${md(x.p)}</p></article>`).join('')}</details>` : '';
+  const txt = T ? `${finDet('text-' + w.id, 'Текст целиком')}${T.note ? `<p class="muted small" style="margin:6px 0 0">${esc(T.note)}</p>` : ''}<div class="fulltext">${T.p.map(x => `<p>${esc(x)}</p>`).join('')}</div></details>` : '';
+  return det + txt;
+}
 finQuizHTML = function () {
   const ids = TASK_ITEMS['fin:all'] || []; if (!ids.length) return finSoon('Тренировка');
   const m = mastery('fin:all'), errs = ids.filter(id => state.errors[id] && !state.errors[id].learned).length;
@@ -150,9 +182,71 @@ function finHomeCard() {
     <div class="row sb"><h2 class="h2">Итоговое сочинение</h2><span class="kicker">${fd >= 0 ? `${fmtD(ESSAY_DATE)} · через ${fd} ${plural(fd, 'день', 'дня', 'дней')}` : 'допуск к ЕГЭ'}</span></div>
     <div class="blk"><div class="row sb small"><span>Прочитано произведений</span><span class="num">${rd} из ${N}</span></div><div class="bar"><i style="width:${rd / N * 100}%"></i></div></div>
     <div class="blk"><div class="row sb small"><span>Тест по книге сдан</span><span class="num">${done} из ${N}</span></div><div class="bar violet"><i style="width:${done / N * 100}%"></i></div></div>
-    <div class="row">${nx ? `<button class="btn primary" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} «${esc(nx.title)}»</button>` : ''}<button class="btn" data-a="tab" data-t="final">${ic('pen', 18)} Все разделы</button></div>
+    <div class="row">${nx ? `<button class="btn primary" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} «${esc(nx.title)}»</button>` : ''}${rd ? `<button class="btn violet" data-a="finParaMine">${ic('pen', 18)} Аргумент к теме</button>` : ''}<button class="btn" data-a="tab" data-t="final">Все разделы</button></div>
   </section>`;
 }
+
+/* ---- вкладка «Слова»: слова к темам, готовые фразы, как писать без воды, тренажёр синонимов ---- */
+function finWordsHTML() {
+  const chips = a => `<div class="chips">${a.map(x => `<span class="tagc">${esc(x)}</span>`).join('')}</div>`;
+  const nV = (TASK_ITEMS['fin:v'] || []).length, m = mastery('fin:v');
+  const word = w => `${finDet('word-' + w.id, esc(w.w))}<div class="stack" style="gap:10px;margin-top:10px">
+      <p style="margin:0;line-height:1.6"><b>Что это:</b> ${esc(w.def)}</p>
+      <div class="stack" style="gap:6px"><div class="kicker">Близкие слова - чтобы не повторяться</div>${chips(w.syn)}</div>
+      <div class="stack" style="gap:6px"><div class="kicker">Противоположные</div>${chips(w.ant)}</div>
+      <div class="stack" style="gap:6px"><div class="kicker">Готовые сочетания</div><p style="margin:0;line-height:1.6">${w.ph.map(esc).join(' · ')}</p></div>
+      <div class="excbox soft"><b>Мысль для вступления:</b> ${esc(w.idea)}</div></div></details>`;
+  return `<p class="muted" style="margin:0">Когда пишешь, а слова получаются общие и одно и то же повторяется, - загляни сюда. У каждой темы: что это значит, какими словами её заменить, готовые сочетания и мысль, с которой можно начать.</p>
+  <section class="card" style="border-left:5px solid var(--violet)"><div class="row sb"><h2 class="h2">Тренажёр слов</h2><span class="num muted small">${m.ok}/${m.total}</span></div><p class="muted small" style="margin:0">Видишь слово темы - вспоминаешь близкие слова, потом открываешь ответ и честно отмечаешь, вспомнила или нет. Непомнящиеся уходят в красную тетрадь.</p><button class="btn primary block" data-a="startKey" data-k="fin:v" data-n="${Math.min(10, nV)}">${ic('play', 18)} 10 слов</button></section>
+  <section class="stack"><div class="kicker">Слова к темам: ${FINAL_WORDS.length}</div>${FINAL_WORDS.map(word).join('')}</section>
+  <section class="card"><h2 class="h2">Готовые фразы</h2><p class="muted small" style="margin:0">Каркас сочинения: вместо «...» - своё. Не учи наизусть всё - выбери по одной фразе для каждой части.</p>${FINAL_PHRASES.map(g => `<div class="stack" style="gap:6px"><div class="kicker">${esc(g.h)}</div>${g.list.map(x => `<div class="excline" style="border-left-color:var(--violet-soft)">${esc(x)}</div>`).join('')}</div>`).join('')}</section>
+  <section class="card"><h2 class="h2">Как писать без воды</h2>${FINAL_NOWATER.map(t => `<div class="stack" style="gap:6px"><b>${esc(t.h)}</b><p class="muted small" style="margin:0">${esc(t.p)}</p><div class="verd no"><b style="color:var(--bad)">Было</b>${esc(t.bad)}</div><div class="verd"><b style="color:var(--good)">Стало</b>${esc(t.good)}</div></div>`).join('')}</section>`;
+}
+
+/* ---- абзац-аргумент по своим книгам: тема подбирается к прочитанным произведениям, после - сверка с образцом ---- */
+const finReadWorks = () => FIN_W.filter(w => finReadOf(w.id));
+finParaPick = function (prev) {
+  const read = new Set(finReadWorks().map(w => w.id));
+  const mine = FIN_T.filter(t => t.id !== prev && (t.works || []).some(id => read.has(id)));
+  const any = FIN_T.filter(t => t.id !== prev && (t.works || []).some(finWork));
+  const pool = mine.length ? mine : any.length ? any : FIN_T;
+  return pool[Math.floor(Math.random() * pool.length)]?.id || null;
+};
+/* «Другая тема» и «Аргумент к теме» на главной: новая пара «тема + книга». Книга - любая из прочитанных, каждая одинаково
+   часто (у «Юшки» тем больше, чем у «Чудесного доктора», - иначе он почти не попадался бы); выбранная вручную непрочитанная остаётся */
+function finParaNext() {
+  const P = state.finPara = state.finPara && typeof state.finPara === 'object' ? state.finPara : { tid: null, wid: '', text: '', res: null };
+  const topics = w => FIN_T.filter(t => t.id !== P.tid && (t.works || []).includes(w.id)), rnd = a => a[Math.floor(Math.random() * a.length)];
+  const cur = finWork(P.wid), read = finReadWorks().filter(w => topics(w).length);
+  const w = cur && !finReadOf(cur.id) && topics(cur).length ? cur : read.length ? rnd(read) : null;
+  if (w) { P.tid = rnd(topics(w)).id; P.wid = w.id; } else P.tid = finParaPick(P.tid);
+  save();
+}
+const GENRE_TO = { 'роман': 'к роману', 'роман-эпопея': 'к роману-эпопее', 'роман в стихах': 'к роману в стихах', 'повесть': 'к повести', 'повесть-сказка': 'к повести-сказке', 'рассказ': 'к рассказу', 'пьеса': 'к пьесе', 'драма': 'к драме', 'комедия': 'к комедии', 'поэма': 'к поэме', 'стихотворение в прозе': 'к стихотворению в прозе' };
+/* автор в родительном падеже для «Обратимся к рассказу А. П. Платонова»: Толстой -> Толстого, Гоголь -> Гоголя, Пушкин -> Пушкина */
+const authorGen = s => String(s || '').replace(/(\S+)$/, x => /ой$|ий$/.test(x) ? x.slice(0, -2) + 'ого' : /ь$/.test(x) ? x.slice(0, -1) + 'я' : /[иеоуюэ]$/.test(x) ? x : x + 'а');
+function finParaModelHTML() {
+  const P = state.finPara || {}, t = finTopic(P.tid); if (!t) return '';
+  const read = finReadWorks().filter(w => (t.works || []).includes(w.id)), w = finWork(P.wid);
+  const mine = read.length ? `<p style="margin:0">Из твоих прочитанных к этой теме подходят: ${read.map(x => `<b>«${esc(x.title)}»</b>`).join(', ')}.</p>` : `<p class="muted small" style="margin:0">Отмечай книги «Прочитала» - тогда темы будут подбираться к твоим книгам.</p>`;
+  let model = '';
+  if (w) {
+    const args = [...(w.args || [])].sort((a, b) => ((b.subs || []).includes(t.sub) ? 1 : 0) - ((a.subs || []).includes(t.sub) ? 1 : 0));
+    const a0 = args[0], lead = `Обратимся ${GENRE_TO[w.genre] || 'к произведению'} ${authorGen(w.authorShort || w.author)} «${w.title}».`;
+    model = a0 ? `<details class="fbd"><summary>Сверь себя с образцом - открой, когда напишешь</summary><div class="stack" style="gap:10px;margin-top:8px">
+      <div class="ai"><b>Вход:</b> ${esc(lead)}\n<b>Эпизод:</b> ${esc(a0.ep)}\n<b>Вывод:</b> ${esc(a0.proves)}\n<b>Связь с темой:</b> закончи фразой со словами из темы - «${esc(t.text)}»</div>
+      ${args.slice(1).map(a => `<article class="sheet-note"><h3>${esc(a.title)}</h3><p>${md(a.ep)}</p><p><b>Вывод:</b> ${md(a.proves || '')}</p></article>`).join('')}
+      <p class="muted small" style="margin:0">Проверь себя: есть ли у тебя автор и название, эпизод в 3-5 предложениях без пересказа всей книги, вывод одной фразой и слова из темы в последнем предложении.</p></div></details>` : '';
+  }
+  return `<section class="card"><h2 class="h2">Твои книги и образец</h2>${mine}${model}
+    <div class="row"><button class="btn sm" data-a="copyPara">Скопировать абзац для проверки Claude</button></div></section>`;
+}
+const finParaHTML0 = finParaHTML;
+finParaHTML = () => finParaHTML0() + finParaModelHTML();
+const finFullHTML0 = finFullHTML;
+finFullHTML = () => finFullHTML0() + `<section class="card"><h2 class="h2">Проверка</h2><p class="muted small" style="margin:0">Когда есть интернет, скопируй сочинение и вставь его в чат с Claude: проверю как комиссия по критериям К1-К5, найду воду и повторы, подскажу, чем заменить.</p><button class="btn block" data-a="copyEssay">Скопировать сочинение для проверки Claude</button><button class="btn sm ghost" data-a="finTab" data-s="words">Слова и фразы - если пишется «водой»</button></section>`;
+const finStepsHTML0 = finStepsHTML;
+finStepsHTML = () => finStepsHTML0() + `<section class="card"><div class="row sb"><h2 class="h2">Если пишется «водой»</h2></div><p class="muted small" style="margin:0">Слова к темам (доброта, милосердие, честь, совесть, равнодушие…), готовые фразы для каждой части и примеры «было - стало» - во вкладке «Слова».</p><button class="btn" data-a="finTab" data-s="words">Открыть «Слова»</button></section>`;
 /* вкладка «Сочинение» открывается там, где была в прошлый раз */
 function finLastSub() { try { const s = localStorage.getItem(LS + '.fin'); return FIN_TABS.some(t => t[0] === s) ? s : 'theory'; } catch { return 'theory'; } }
 const finRemember = s => { try { localStorage.setItem(LS + '.fin', s); } catch {} };
@@ -210,6 +304,11 @@ function reportVerdict(r) {
   return null;
 }
 const reportsWaiting = () => (state.reports || []).filter(r => !reportVerdict(r));
+/* скопировать текст для чата с Claude; если буфер обмена недоступен - показать текст, чтобы скопировать руками */
+async function copyForClaude(t) {
+  try { await navigator.clipboard.writeText(t); toast('Скопировала - вставь в чат с Claude'); }
+  catch { openSheet(`<h2 class="h2">Скопируй и отправь Claude</h2><textarea class="codebox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`); }
+}
 function reportsText() {
   return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 70» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
     const it = getItem(r.id);
@@ -283,11 +382,18 @@ Object.assign(A, {
   openData: () => { closeSheet(); go({ v: 'data' }); },
   openGifts: () => go({ v: 'gifts' }),
   openReports: () => { closeSheet(); go({ v: 'reports' }); },
-  copyReports: async () => {
-    const t = reportsText();
-    try { await navigator.clipboard.writeText(t); toast('Скопировала - вставь в чат с Claude'); }
-    catch { openSheet(`<h2 class="h2">Скопируй и отправь Claude</h2><textarea class="codebox" id="repBox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`); }
+  copyReports: () => copyForClaude(reportsText()),
+  copyEssay: () => {
+    const d2 = state.draft2, text = String(d2.text || '').trim(); if (words(text) < 30) { toast('Сначала напиши сочинение'); return; }
+    copyForClaude(`Проверь моё итоговое сочинение как член комиссии: зачёт или нет по критериям К1-К5, где вода и повторы, какие слова заменить и как сказать точнее.\nТема: ${d2.theme || '(не указана)'}\n\nСочинение (${words(text)} слов):\n${text}`);
   },
+  copyPara: () => {
+    const P = state.finPara || {}, t = finTopic(P.tid), w = finWork(P.wid), text = String(P.text || '').trim();
+    if (words(text) < 15) { toast('Сначала напиши абзац'); return; }
+    copyForClaude(`Проверь мой абзац-аргумент для итогового сочинения: верны ли факты, доказывает ли он тему, где вода и повторы, как сказать точнее.\nТема: ${t ? t.text : '-'}\nПроизведение: ${w ? finWorkName(w) : '-'}\n\n${text}`);
+  },
+  finParaNew: () => { finParaNext(); render(); },
+  finParaMine: () => { finParaNext(); finRemember('write'); go({ v: 'final', sub: 'write', part: 'para' }); },
   reportAgain: () => { // ответ уже был, но она всё ещё видит ошибку - жалоба снова ждёт проверки
     const id = ses?.ids?.[ses.i], r = id && state.reports?.find(x => x.id === id); if (!r) return;
     const c = REPORT_CHECKS[id]; if (c) r.after = c.d;

@@ -11,7 +11,8 @@
 Шрифты и значки лежат в docs/fonts и docs/icons (значки рисует tools/make-icons.cjs).
 
 Код и материалы артефакта не переписываются: сборщик точечно меняет несколько мест (PATCHES - каждое
-должно найтись ровно один раз, иначе сборка останавливается) и вставляет перед «старт» tools/offline.js.
+должно найтись ровно один раз, иначе сборка останавливается) и вставляет перед «старт» новые материалы
+из tools/content (CONTENT) и tools/offline.js.
 """
 import base64
 import hashlib
@@ -34,6 +35,8 @@ FONTS = [  # (файл в docs/fonts, семейство, насыщенност
     ('unbounded-latin-ext', 'Unbounded', '200 900'), ('unbounded-latin', 'Unbounded', '200 900'),
 ]
 ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
+# материалы офлайн-версии к итоговому сочинению: подробные пересказы, новые произведения, слова и связки
+CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js']
 
 BACK = '<button class="back" data-a="back">${ic(\'left\', 18)} Назад</button>'
 
@@ -69,6 +72,12 @@ PATCHES = [
     ('итоговое сочинение: на вкладке «Назад» не нужен',
      BACK + '\n  <header class="stack" style="gap:6px"><div class="kicker">${fd >= 0',
      '${ui.stack.length ? `' + BACK + '` : \'\'}\n  <header class="stack" style="gap:6px"><div class="kicker">${fd >= 0'),
+    ('итоговое сочинение: вкладка «Слова» - синонимы, связки, как убрать воду (её просьба 29.10.2026)',
+     "['topics', 'Темы'], ['quiz', 'Тренировка'],",
+     "['topics', 'Темы'], ['words', 'Слова'], ['quiz', 'Тренировка'],"),
+    ('итоговое сочинение: экран вкладки «Слова»',
+     "  else if (sub === 'quiz') body = finQuizHTML();",
+     "  else if (sub === 'quiz') body = finQuizHTML();\n  else if (sub === 'words') body = finWordsHTML();"),
     ('состояние: отметки «прочитано»',
      'favW: {}, finPara: null, mixSeen: {},',
      'favW: {}, readW: {}, finPara: null, mixSeen: {},'),
@@ -225,7 +234,8 @@ def main():
         js = patch(js, old, new, label)
     # ответы на жалобы «Здесь ошибка?» - данные для tools/offline.js
     checks = {k: v for k, v in json.loads((TOOLS / 'report-checks.json').read_text(encoding='utf-8')).items() if not k.startswith('_')}
-    offline = ('const REPORT_CHECKS = ' + json.dumps(checks, ensure_ascii=False) + ';\n'
+    content = ''.join((TOOLS / 'content' / n).read_text(encoding='utf-8').rstrip() + '\n\n' for n in CONTENT)
+    offline = (content + 'const REPORT_CHECKS = ' + json.dumps(checks, ensure_ascii=False) + ';\n'
                + (TOOLS / 'offline.js').read_text(encoding='utf-8'))
     js = patch(js, START, offline.rstrip() + '\n\n' + START, 'вставка tools/offline.js перед «старт»')
     css = css.rstrip() + '\n' + (TOOLS / 'offline.css').read_text(encoding='utf-8')
