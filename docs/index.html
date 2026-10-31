@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ЕГЭ на 70</title>
+<title>ЕГЭ на 100</title>
 <meta name="description" content="Подготовка к итоговому сочинению и ЕГЭ: русский, обществознание, английский. Работает без интернета.">
 <meta name="theme-color" content="#F7F0F3" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#161015" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ЕГЭ на 70">
+<meta name="apple-mobile-web-app-title" content="ЕГЭ на 100">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -283,6 +283,56 @@ details.card.fsec .sheet-note{box-shadow:none;border:1.5px solid var(--line);mar
 /* «Не вспомнила / Вспомнила»: в карточке вопроса слова переносятся где угодно - на этих кнопках слово не рвём */
 .qcard [data-a="self"]{overflow-wrap:normal;padding:12px 10px;gap:6px}
 @media (max-width:350px){.qcard [data-a="self"] svg{display:none}}
+/* ===== «ЕГЭ на 100»: обложка, план дня, неделя, прогресс (tools/plan.js) ===== */
+.cover{position:relative;overflow:hidden;border-radius:26px;padding:18px 18px 16px;color:#fff;background:linear-gradient(150deg,#E27BA5 0%,#C8507E 46%,#6F5AC4 100%);box-shadow:var(--shadow);display:grid;gap:10px}
+.cover::before,.cover::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.12);pointer-events:none}
+.cover::before{width:190px;height:190px;right:-50px;top:-70px}
+.cover::after{width:120px;height:120px;right:40px;bottom:-70px;background:rgba(255,255,255,.08)}
+.cv-brand{display:flex;align-items:center;gap:12px;position:relative}
+.cv-k{font:800 15px/1.15 var(--body);letter-spacing:.14em;text-transform:uppercase;opacity:.92}
+.cv-n{font:700 60px/.9 var(--display);letter-spacing:-.04em}
+.cv-sub{margin:0;font-weight:800;font-size:16px;line-height:1.35;position:relative}
+.cv-pills{display:flex;flex-wrap:wrap;gap:8px;position:relative}
+.cv-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:99px;background:rgba(255,255,255,.2);border:0;color:#fff;font:800 13.5px var(--body);cursor:pointer;text-align:left}
+.plan .bar{height:12px}
+.pstep{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-bottom:1px solid var(--line)}
+.pstep:last-child{border-bottom:0}
+.pchk{width:44px;height:44px;border-radius:14px;border:2.5px solid var(--rose);background:none;display:grid;place-items:center;font:700 17px var(--display);color:var(--rose);cursor:pointer;padding:0}
+.pstep.done .pchk{background:var(--good);border-color:var(--good);color:#fff}
+.pbody{display:grid;gap:3px;min-width:0}
+.parea{font:800 12px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--violet)}
+.pttl{font-weight:800;font-size:18px;line-height:1.3}
+.pstep.done .pttl{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--good)}
+.psub{font-size:15px;line-height:1.45;color:var(--muted)}
+.pgo{justify-self:start;margin-top:8px}
+.pdone{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--good-soft);color:var(--good)}
+.pdone b{color:var(--ink)}
+.pdone .small{color:var(--muted)}
+.pnext{border-left:5px solid var(--rose)}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wd{display:grid;justify-items:center;gap:4px;font:800 12px var(--body);color:var(--muted)}
+.wd i{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font:700 13px var(--display);font-style:normal;color:var(--ink)}
+.wd.full i{background:var(--good);border-color:var(--good);color:#fff}
+.wd.part i{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+.wd.rest i{border-style:dashed;color:var(--muted)}
+.wd.fut i{color:var(--faint);border-color:var(--paper-2)}
+.wd.today i{box-shadow:0 0 0 3px var(--rose-soft);border-color:var(--rose)}
+.wd.today span{color:var(--rose)}
+.prow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;color:var(--ink);cursor:pointer}
+.prow:last-child{border-bottom:0}
+.prow .tnum{width:44px;height:44px;border-radius:13px}
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:14px;border-radius:16px;border:2px dashed var(--line);font-weight:800;color:var(--muted);text-align:center}
+details.more>summary::-webkit-details-marker{display:none}
+details.more[open]>summary{margin-bottom:16px}
+.ptbl tr.on td{color:var(--rose)}
+.ptbl tr.on td:last-child{color:var(--rose);font-weight:800}
+.ph{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ph:last-child{border-bottom:0}
+.phd{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line);display:grid;place-items:center;margin-top:2px;color:#fff}
+.ph.now .phd{border-color:var(--rose);background:var(--rose-soft)}
+.ph.past .phd{border-color:var(--good);background:var(--good)}
+.ph.past b{color:var(--muted)}
+@media (max-width:360px){.cv-n{font-size:52px}.wd i{width:32px;height:32px}}
 </style>
 </head>
 <body>
@@ -290,7 +340,7 @@ details.card.fsec .sheet-note{box-shadow:none;border:1.5px solid var(--line);mar
 <nav id="tabs" aria-label="Разделы"></nav>
 <div id="toast" role="status" hidden></div>
 <div id="sheetWrap" hidden><div id="sheet" role="dialog" aria-modal="true"></div></div>
-<script>window.EGE_BUILD = {"version": "6f61823e2b", "content": "2026-10-25", "source": "1792689980-1d59"};</script>
+<script>window.EGE_BUILD = {"version": "92dd41ec32", "content": "2026-10-25", "source": "1792689980-1d59"};</script>
 <script>
 'use strict';
 try { if (!document.documentElement.lang) document.documentElement.lang = 'ru'; } catch {} // переносы длинных слов в заголовках (hyphens:auto) - только с языком страницы
@@ -942,7 +992,7 @@ const RU_PART2 = [
     ] },
   { n: 27, title: 'Сочинение', pts: 22, block: 'essay', fipi: 'Сочинение по тексту, не меньше 150 слов. 22 балла - почти половина всех баллов.',
     theory: [
-      { h: 'Главное', p: 'Сочинение стоит **22 первичных балла** - почти половина экзамена. Для 70 баллов нужно примерно 16 из 22. Это реально: структура всегда одна и та же. Меньше 150 слов - 0 баллов за всё.' },
+      { h: 'Главное', p: 'Сочинение стоит **22 первичных балла** - почти половина экзамена. Для 70 баллов нужно примерно 16 из 22, для 90 - около 20, для 100 - все 22. Это реально: структура всегда одна и та же. Меньше 150 слов - 0 баллов за всё.' },
       { h: 'План - 5 абзацев', p: '**1. Вступление** (2-3 предложения) - подведи к теме.\n**2. Позиция автора** - одной ясной фразой: «Автор считает, что...».\n**3. Комментарий** - два примера из текста:\n- «Чтобы подвести читателя к этой мысли, автор рассказывает о... (предложения №...). Этот пример показывает, что...»\n- «Кроме того, автор обращает внимание на... (№...). Это помогает понять, что...»\n- Связь примеров: «Оба примера дополняют друг друга: ...» или «Примеры противопоставлены: ...».\n**4. Твоё мнение** - «Я согласна с автором, потому что...» + пример-аргумент из книги или жизни.\n**5. Вывод** - 1-2 предложения.' },
       { h: 'Критерии - за что баллы', p: 'К1 - позиция автора: 1\nК2 - комментарий (2 примера, пояснения, связь): 3\nК3 - твоё отношение и обоснование: 2\nК4 - точность фактов: 1\nК5 - логичность: 2\nК6 - орфография: 3\nК7 - пунктуация: 3\nК8 - грамматика: 3\nК9 - речь: 3\nК10 - этика: 1\nВсего: 22' },
       { h: 'Частые ошибки', p: '- Пересказ вместо комментария: важно не ЧТО случилось, а ЧТО это показывает.\n- Нет связи между примерами - теряешь балл в К2.\n- Аргумент из фильма или игры - лучше книга или реальный случай.\n- Длинные предложения - больше риска запятых. Пиши короче.' },
@@ -3036,13 +3086,12 @@ function vHome() {
   const t = today(), d = day(t), N = state.settings.norm, st = streak(), due = errDue().length, un = errList().filter(e => !e.learned).length;
   const g = mainGift(), part = state.settings.part === 2 ? 2 : 1, essayD = daysTo(ESSAY_DATE), examD = daysTo(EXAM_DATE);
   const wkN = Object.keys(state.weak || {}).filter(k => /^ru:\d+$/.test(k) && +k.slice(3) <= 26 && !state.weak[k].done).length;
-  const sync = cloud.status === 'ok' ? 'всё сохраняется в облаке' : cloud.status === 'err' ? 'нет связи с облаком - сохраню, когда появится' : 'офлайн-версия, всё хранится на этом устройстве';
+  const sync = cloud.status === 'ok' ? 'всё сохраняется в облаке' : cloud.status === 'err' ? 'нет связи с облаком - сохраню, когда появится' : 'сохраняется на этом устройстве';
   const lastEssay = state.essays[0]?.result?.total;
   return `
-  <header class="stack" style="gap:4px;padding-top:6px"><div class="kicker">${WD[new Date().getDay()]}, ${fmtD(t)}</div><h1 class="h1">Привет, Даша!</h1><div class="muted small">${sync} · ${dataLinkHTML()}</div></header>
+  <header class="stack" style="gap:4px;padding-top:6px"><div class="kicker">${WD[new Date().getDay()]}, ${fmtD(t)}</div><h1 class="h1">Привет, Даша!</h1><div class="muted small">${sync}</div></header>
   ${resumeCard()}
-  ${finHomeCard()}
-  <div class="chips">${essayD >= 0 && !FIN_W.length ? `<button class="chip" data-a="openFinal" style="border:0;cursor:pointer">${ic('pen', 16)} Итоговое сочинение - через ${essayD} ${plural(essayD, 'день', 'дня', 'дней')}</button>` : ''}<span class="chip">${ic('cap', 16)} ЕГЭ по русскому - примерно через ${examD} ${plural(examD, 'день', 'дня', 'дней')}</span></div>
+  <div class="chips">${essayD >= 0 ? `<button class="chip" data-a="openFinal" style="border:0;cursor:pointer">${ic('pen', 16)} Итоговое сочинение - через ${essayD} ${plural(essayD, 'день', 'дня', 'дней')}</button>` : ''}<span class="chip">${ic('cap', 16)} ЕГЭ по русскому - примерно через ${examD} ${plural(examD, 'день', 'дня', 'дней')}</span></div>
   <section class="card">
     <div class="row sb"><h2 class="h2">Сегодня</h2><span class="chip fire">${ic('flame', 16)} ${st ? `${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : 'серия начинается сегодня'}</span></div>
     <div class="row sb" style="align-items:flex-end"><div class="big">${Math.min(d.n, N)}<span>/${N}</span></div><div class="muted small" style="text-align:right">${d.n ? `верно ${d.ok} из ${d.n}` : 'начни с 10 заданий'}</div></div>
@@ -3058,7 +3107,7 @@ function vHome() {
   <section class="card"><h2 class="h2">Мои обещания на сегодня</h2><div>${promisesHTML()}</div></section>
   ${planCard()}
   ${un ? `<section class="card" style="border-left:5px solid var(--bad)"><div class="row sb"><h2 class="h2">Красная тетрадь</h2><span class="kicker">${un} ${plural(un, 'ошибка', 'ошибки', 'ошибок')}</span></div><p class="muted" style="margin:0">${due ? `На повтор сегодня: <b>${due}</b>. Каждая исправленная - +${EARN.fix} ₽, выученная - ещё +${EARN.learned} ₽.` : 'На сегодня все ошибки повторены. Завтра продолжим.'}</p>${due ? `<button class="btn block" data-a="marathon">${ic('repeat', 18)} Марафон ошибок</button>` : ''}</section>` : ''}
-  <section class="card" data-a="openGifts" style="cursor:pointer">
+  <section class="card" data-a="tab" data-t="gifts" style="cursor:pointer">
     <div class="row sb"><h2 class="h2">Копилка</h2><span class="coin" style="font-size:32px">${rub(state.coins)}</span></div>
     ${g ? `<div class="row sb small"><b>${esc(g.title)}</b><span class="muted num">${rub(Math.min(state.coins, g.cost))} из ${rub(g.cost)}</span></div><div class="bar gold"><i style="width:${Math.min(100, state.coins / g.cost * 100)}%"></i></div>` : '<p class="muted" style="margin:0">Добавь подарок, на который копишь.</p>'}
   </section>
@@ -3865,9 +3914,9 @@ function vSesEnd() {
   if (s.mock) {
     const p = s.score, at = e => RU_SCALE[Math.min(50, p + e)];
     return `<section class="card celebrate pop"><div class="kicker">Пробник · тестовая часть</div><div class="big">${p}<span>/${s.max}</span></div>
-      <div class="h2">${p >= 25 ? 'Уровень 80 баллов!' : p >= 22 ? 'Уровень 70 баллов есть!' : 'Хорошая точка отсчёта'}</div>
+      <div class="h2">${p >= 28 ? 'Тест без единой ошибки - путь к 100!' : p >= 27 ? 'Уровень 90+!' : p >= 25 ? 'Уровень 80 баллов!' : p >= 22 ? 'Уровень 70 баллов есть!' : 'Хорошая точка отсчёта'}</div>
       <p style="margin:0">С сочинением на 16 из 22 это примерно <b>${at(16)} ${plural(at(16), 'балл', 'балла', 'баллов')}</b>, на 18 из 22 - <b>${at(18)}</b>.</p>
-      <p class="muted small" style="margin:0">Для 70 нужно около 38 первичных из 50, для 80 - около 43. Шкала 2026 года, примерно.</p>
+      <p class="muted small" style="margin:0">Для 70 нужно около 38 первичных из 50, для 80 - около 43, для 90 - около 47, для 100 - все 50. Шкала 2026 года, примерно.</p>
       ${s.got ? `<div class="coin">+${rub(s.got)}</div>` : ''}<p class="muted" style="margin:0">${s.newErr ? `${s.newErr} ${plural(s.newErr, 'ошибка ушла', 'ошибки ушли', 'ошибок ушли')} в красную тетрадь.` : 'Без новых ошибок!'}</p>
       <div class="row" style="justify-content:center"><button class="btn primary" data-a="marathon">${ic('repeat', 18)} Разобрать ошибки</button><button class="btn" data-a="sesHome">На главную</button></div></section>`;
   }
@@ -4411,9 +4460,18 @@ Object.assign(FINAL_DETAILS, {
     { h: 'Развязка', p: `Утром профессор приезжает с Алмазовым на место, видит кусты, смущается и **извиняется**. Экзамен сдан. Вечером муж и жена смеются над случившимся, и Вера говорит, что **теперь всю жизнь будет особенно любить сирень**.` },
     { h: 'Над чем подумать', p: `Рассказ можно повернуть по-разному. **Любовь и поддержка:** Вера ради мужа жертвует своим и спасает его в трудную минуту. **Цена лжи:** Алмазов мог честно признать ошибку, но из гордости солгал - и исправлять ложь пришлось жене.` },
   ],
+  knopka: [
+    { h: 'Посылка', p: `Нью-Йорк. Супруги **Норма и Артур Льюис** живут скромно и мечтают о лучшей жизни. Однажды Норма находит у двери посылку: внутри - коробочка с **кнопкой под стеклянным колпачком** и записка, что вечером к ним зайдёт **мистер Стюард**.` },
+    { h: 'Предложение', p: `Вечером приходит вежливый незнакомец и объясняет: **если нажать кнопку, где-то в мире умрёт человек, которого они не знают, а они получат 50 тысяч долларов**. **Артур возмущён и выставляет его за дверь.**` },
+    { h: 'Спор', p: `Супруги спорят. Норма думает о том, сколько всего можно сделать на эти деньги, и уговаривает себя: тот, кто умрёт, - **незнакомец где-то далеко**, может быть, какой-нибудь старик на другом конце света. **Артур отвечает: это убийство**, и никакие деньги его не оправдывают.` },
+    { h: 'Нажатие', p: `Мысль о деньгах не отпускает Норму. Оставшись одна, она говорит себе, что всё это глупая шутка, и **нажимает кнопку**. Ничего не происходит.` },
+    { h: 'Звонок', p: `Вскоре Норме сообщают: **Артур погиб - он попал под поезд метро**. Потом выясняется, что по страховке мужа ей полагается **ровно 50 тысяч долларов** - та самая сумма.` },
+    { h: 'Финал', p: `Норма в отчаянии звонит мистеру Стюарду: ведь ей обещали, что умрёт тот, **кого она не знает**! Стюард спокойно отвечает вопросом: **неужели она и правда думала, что знала своего мужа?**` },
+    { h: 'Над чем подумать', p: `**Выбор и ответственность:** Норма поставила деньги выше чужой жизни - и потеряла самого близкого человека. **Равнодушие:** «незнакомый» человек - тоже чей-то муж, сын, отец. **Совесть:** Артур сразу понял, что за кнопкой - убийство, и отказался.` },
+  ],
 });
 
-/* ===== Новые произведения офлайн-версии (её просьба 29.10.2026: «Чудесный доктор» и короткие рассказы) =====
+/* ===== Новые произведения офлайн-версии (её просьбы: 29.10.2026 - «Чудесный доктор» и короткие рассказы, 31.10.2026 - «Кнопка, кнопка») =====
    Формат - как FINAL_WORKS в артефакте. id не менять: по ним хранятся ответы и отметки «прочитано». */
 const EXTRA_WORKS = [
   {
@@ -4452,11 +4510,30 @@ const EXTRA_WORKS = [
     ],
     quotes: [],
   },
+  {
+    id: 'knopka', title: 'Кнопка, кнопка', genre: 'рассказ', year: 1970,
+    author: 'Ричард Мэтисон', authorShort: 'Р. Мэтисон',
+    heroes: [
+      { name: 'Норма Льюис', who: 'жена Артура; соблазняется деньгами и нажимает кнопку' },
+      { name: 'Артур Льюис', who: 'её муж; сразу отказывается: считает, что нажать кнопку - значит убить человека' },
+      { name: 'Мистер Стюард', who: 'вежливый незнакомец, который приносит коробку с кнопкой и предлагает сделку', q: false },
+    ],
+    plot: 'Американский рассказ. Супругам Норме и Артуру Льюис приносят коробку с кнопкой. Незнакомец, мистер Стюард, объясняет: если нажать кнопку, где-то в мире умрёт человек, которого они не знают, а они получат 50 тысяч долларов. Артур с возмущением выставляет гостя: это убийство. Норма спорит с мужем, уговаривает себя, что незнакомый человек где-то далеко, и, оставшись одна, нажимает кнопку. Вскоре она узнаёт, что Артур погиб под поездом метро, а по его страховке ей полагается ровно 50 тысяч. Норма в отчаянии звонит Стюарду: ей ведь обещали, что умрёт незнакомый человек. Стюард отвечает вопросом: неужели она думала, что знала своего мужа?',
+    args: [
+      { title: 'Цена выбора', ep: 'Норма решает нажать кнопку: смерть незнакомого человека где-то далеко кажется ей не её делом, а деньги очень нужны. После нажатия погибает её собственный муж, и она получает те самые 50 тысяч - по его страховке.', proves: 'Человек отвечает за свой выбор. Нельзя строить своё благополучие ценой чужой жизни: такая сделка оборачивается против самого человека.', subs: ['s1d', 's1b'] },
+      { title: 'Чужих людей не бывает', ep: 'Норма уговаривает себя: тот, кто умрёт, - незнакомец, может быть, какой-нибудь старик на другом конце света. Артур отвечает, что это всё равно убийство. В финале «незнакомцем» оказывается её муж.', proves: 'Равнодушие к «чужим» людям опасно: тот, кто готов пожертвовать незнакомцем ради выгоды, однажды жертвует и самым близким.', subs: ['s1b', 's2b'] },
+      { title: 'Искушение лёгкими деньгами', ep: 'Сначала предложение Стюарда кажется Норме чудовищным, но мысль о 50 тысячах её не отпускает: она спорит с мужем, ищет оправдания и в конце концов, оставшись одна, нажимает кнопку.', proves: 'Главное - победить в себе жадность и соблазн лёгкой выгоды. Один раз оправдав недопустимое, человек делает шаг, о котором будет жалеть всю жизнь.', subs: ['s1c', 's1a'] },
+      { title: 'Голос совести', ep: 'Артур сразу понимает, что за кнопкой - убийство, выставляет Стюарда за дверь и отказывается от денег, как бы они ни были нужны семье.', proves: 'Совесть помогает сделать правильный выбор: есть принципы, которые нельзя нарушать ни при каких обстоятельствах, - например, не покупать своё счастье чужой жизнью.', subs: ['s1b', 's2b'] },
+      { title: 'Знаем ли мы близких?', ep: 'В финале Стюард отвечает Норме, что она не знала своего мужа. Норма легко согласилась пожертвовать «незнакомым» человеком и не задумалась, что её решение может отнять у неё мужа.', proves: 'Деньги и выгода могут разрушить семью: если в ней нет взаимопонимания и уважения, самый близкий человек оказывается чужим.', subs: ['s2a', 's1a'] },
+    ],
+    quotes: [],
+  },
 ];
 /* к каким темам из FINAL_TOPICS подходят новые произведения */
 const EXTRA_TOPIC_WORKS = {
-  t007: ['doktor'], t008: ['doktor'], t010: ['doktor'], t045: ['doktor'], t027: ['doktor'],
-  t021: ['siren'], t003: ['siren'], t013: ['siren'],
+  t003: ['siren'], t006: ['knopka'], t007: ['doktor'], t008: ['doktor', 'knopka'], t009: ['knopka'], t010: ['doktor'],
+  t013: ['siren', 'knopka'], t015: ['knopka'], t017: ['knopka'], t019: ['knopka'], t021: ['siren', 'knopka'],
+  t027: ['doktor', 'knopka'], t045: ['doktor'],
 };
 /* вопросы как на сочинении к новым произведениям (works - для теста по книге) */
 const EXTRA_QUIZ = [
@@ -4466,6 +4543,11 @@ const EXTRA_QUIZ = [
   { id: 'fqx-004', type: 'choice', works: ['doktor'], q: 'Какой эпизод «Чудесного доктора» лучше всего доказывает, что добро продолжается?', o: ['Мальчики смотрят на витрину магазина', 'Швейцар прогоняет мальчиков', 'Выросший Григорий Мерцалов сам стал отзывчивым к бедным', 'Мерцалов целый день просит помощи'], a: 2, ex: 'Тот, кому когда-то помогли, вырос и сам стал помогать людям, - добро доктора продолжилось в нём.' },
   { id: 'fqx-005', type: 'choice', works: ['siren'], q: 'Что сделала Вера, чтобы спасти мужа?', o: ['Пошла к профессору и уговорила его', 'Заложила украшения, и ночью они посадили на этом месте кусты сирени', 'Перерисовала план мужа', 'Попросила знакомого генерала помочь'], a: 1, ex: 'Вера заложила свои украшения, нашла садовника, и ночью они посадили кусты там, где на плане были нарисованы кусты.' },
   { id: 'fqx-006', type: 'choice', works: ['siren'], q: 'Почему на плане Алмазова оказались кусты, которых не было на местности?', o: ['Так велел профессор', 'Он закрасил случайную кляксу и нарисовал на её месте кусты', 'Кусты вырубили после съёмки', 'Он перепутал планы'], a: 1, ex: 'Алмазов посадил кляксу и, чтобы скрыть её, нарисовал кусты, а потом не признался в этом.' },
+  { id: 'fqx-007', type: 'choice', works: ['knopka'], q: 'Что предлагает мистер Стюард в рассказе «Кнопка, кнопка»?', o: ['Нажать кнопку: где-то умрёт незнакомый им человек, а они получат 50 тысяч долларов', 'Нажать кнопку - и исполнится любое желание', 'Продать ему коробку за 50 тысяч долларов', 'Нажать кнопку, чтобы спасти чью-то жизнь'], a: 0, ex: 'Сделка Стюарда: кнопка = смерть незнакомого человека + 50 тысяч долларов. В этом и выбор героев.' },
+  { id: 'fqx-008', type: 'choice', works: ['knopka'], q: 'Кто в рассказе нажимает кнопку?', o: ['Артур', 'Норма', 'Мистер Стюард', 'Никто: коробку возвращают'], a: 1, ex: 'Кнопку нажимает Норма, когда остаётся одна. Артур с самого начала против.' },
+  { id: 'fqx-009', type: 'choice', works: ['knopka'], q: 'Чем заканчивается рассказ «Кнопка, кнопка»?', o: ['Норма отказывается от денег и возвращает коробку', 'Погибает муж Нормы, и по его страховке она получает 50 тысяч', 'Стюард признаётся, что всё было шуткой', 'Артур нажимает кнопку, и погибает Норма'], a: 1, ex: 'Артур погибает под поездом метро, страховка - ровно 50 тысяч. «Незнакомцем» оказался её муж.' },
+  { id: 'fqx-010', type: 'choice', works: ['knopka'], q: 'Найди ошибку в аргументе. «В рассказе Р. Мэтисона „Кнопка, кнопка“ Артур уговаривает жену нажать кнопку ради денег».', o: ['Ошибки нет', 'Наоборот: уговаривает себя и нажимает кнопку Норма, а Артур против', 'Неверен автор: рассказ написал Рэй Брэдбери', 'Кнопку нажимает сам мистер Стюард'], a: 1, ex: 'Артур с самого начала называет это убийством. Соблазн - у Нормы. Перепутанный герой - фактическая ошибка.' },
+  { id: 'fqx-011', type: 'choice', works: ['knopka'], q: 'К какой теме «Кнопка, кнопка» подходит лучше всего?', o: ['Что такое свобода выбора?', 'Чему человек может научиться у природы?', 'В чём сила слова?', 'Как становятся героями на войне?'], a: 0, ex: 'Рассказ - о выборе и ответственности за него, о равнодушии к «чужим» людям и о соблазне лёгких денег.' },
 ];
 /* полные тексты небольших произведений (только то, что уже в общественном достоянии и известно дословно) */
 const FINAL_TEXTS = {
@@ -4522,6 +4604,56 @@ const FINAL_NOWATER = [
   { h: 'Одна мысль - одно предложение', p: 'Длинные предложения запутывают и мысль, и запятые. Режь их на короткие.', bad: 'Герой, который был очень добрым человеком и всегда помогал людям, которые к нему обращались, однажды...', good: 'Герой всегда помогал людям. Однажды...' },
   { h: 'Проверка вычёркиванием', p: 'Вычеркни предложение. Если смысл не пропал - это была вода.', bad: 'Это очень важный и интересный вопрос, над которым стоит задуматься.', good: '(вычеркнуть - сразу к мысли)' },
 ];
+
+/* ===== Авторы полностью: имя, отчество, фамилия (её просьба 31.10.2026: «на запоминание имён, фамилий, отчеств авторов»;
+   Куприна она назвала «Иван Александрович» - так зовут Гончарова, а Куприн наоборот, Александр Иванович) =====
+   AUTHOR_TIPS - запоминалка к автору (ключ - author из карточки произведения), показывается после ответа.
+   AUTHOR_TRAPS - неверные варианты, которые путают чаще всего; остальные строятся сами: имя и отчество местами,
+   отчество другого писателя с тем же именем, имя другого писателя с тем же отчеством.
+   AUTHOR_OPTS - авторы без отчества и псевдонимы: вопрос и варианты целиком. */
+const AUTHOR_TIPS = {
+  'Андрей Платонович Платонов': 'Андрей Платонович. Фамилия Платонов - псевдоним от имени отца, Платона: поэтому отчество и фамилия похожи.',
+  'Фёдор Михайлович Достоевский': 'Фёдор Михайлович. Запоминалка: Ф. М. - как FM-радио.',
+  'Александр Сергеевич Пушкин': 'Александр Сергеевич. Так же зовут Грибоедова («Горе от ума»): два Александра Сергеевича.',
+  'Лев Николаевич Толстой': 'Лев Николаевич. Не путай с Алексеем Николаевичем Толстым - это другой писатель.',
+  'Иван Сергеевич Тургенев': 'Иван Сергеевич. Отчество как у Пушкина - Сергеевич, а имя Иван.',
+  'Михаил Афанасьевич Булгаков': 'Михаил Афанасьевич - отчество от редкого имени Афанасий.',
+  'Михаил Александрович Шолохов': 'Михаил Александрович. Михаилов трое: Лермонтов - Юрьевич, Булгаков - Афанасьевич, Шолохов - Александрович.',
+  'Александр Исаевич Солженицын': 'Александр Исаевич. Инициалы А. И. - как у Куприна, но Куприн - Иванович, а Солженицын - Исаевич.',
+  'Максим Горький (Алексей Максимович Пешков)': 'Максим Горький - псевдоним, настоящее имя - Алексей Максимович Пешков. На сочинении пиши «Максим Горький» или «М. Горький».',
+  'Николай Васильевич Гоголь': 'Николай Васильевич.',
+  'Михаил Юрьевич Лермонтов': 'Михаил Юрьевич - отчество от имени Юрий.',
+  'Александр Николаевич Островский': 'Александр Николаевич.',
+  'Антон Павлович Чехов': 'Антон Павлович.',
+  'Иван Александрович Гончаров': 'Иван Александрович. У Куприна наоборот - Александр Иванович.',
+  'Валентин Григорьевич Распутин': 'Валентин Григорьевич.',
+  'Александр Иванович Куприн': 'Александр Иванович. Не путай с Гончаровым («Обломов»): он наоборот, Иван Александрович.',
+  'Николай Михайлович Карамзин': 'Николай Михайлович.',
+  'Александр Сергеевич Грибоедов': 'Александр Сергеевич - как Пушкин.',
+  'Денис Иванович Фонвизин': 'Денис Иванович.',
+  'Антуан де Сент-Экзюпери': 'Французский писатель, отчества нет. «де» - с маленькой буквы, фамилия через дефис: Сент-Экзюпери.',
+  'Борис Львович Васильев': 'Борис Львович - отчество от имени Лев.',
+  'Ричард Мэтисон': 'Американский писатель, отчества нет. Фамилия - Мэтисон, через «т».',
+};
+const AUTHOR_TRAPS = {
+  'Александр Иванович Куприн': ['Иван Александрович Куприн', 'Александр Исаевич Куприн'],
+  'Иван Александрович Гончаров': ['Александр Иванович Гончаров'],
+  'Александр Исаевич Солженицын': ['Александр Иванович Солженицын'],
+  'Лев Николаевич Толстой': ['Алексей Николаевич Толстой'],
+};
+const AUTHOR_OPTS = {
+  'Максим Горький (Алексей Максимович Пешков)': { q: t => `«${t}»: Максим Горький - это псевдоним. Как на самом деле звали писателя?`, a: 'Алексей Максимович Пешков', o: ['Максим Алексеевич Пешков', 'Алексей Михайлович Пешков', 'Максим Алексеевич Горький'] },
+  'Антуан де Сент-Экзюпери': { a: 'Антуан де Сент-Экзюпери', o: ['Антон де Сент-Экзюпери', 'Анри де Сент-Экзюпери', 'Антуан де Мопассан'] },
+  'Ричард Мэтисон': { a: 'Ричард Мэтисон', o: ['Ричард Мэдисон', 'Роберт Мэтисон', 'Рэй Брэдбери'] },
+};
+/* имя -> отчество: чтобы строить ловушки «имя и отчество местами» */
+const PATRON = {
+  'Александр': 'Александрович', 'Иван': 'Иванович', 'Сергей': 'Сергеевич', 'Николай': 'Николаевич', 'Михаил': 'Михайлович',
+  'Лев': 'Львович', 'Фёдор': 'Фёдорович', 'Андрей': 'Андреевич', 'Платон': 'Платонович', 'Афанасий': 'Афанасьевич',
+  'Исай': 'Исаевич', 'Максим': 'Максимович', 'Алексей': 'Алексеевич', 'Василий': 'Васильевич', 'Юрий': 'Юрьевич',
+  'Павел': 'Павлович', 'Антон': 'Антонович', 'Григорий': 'Григорьевич', 'Валентин': 'Валентинович', 'Денис': 'Денисович',
+  'Борис': 'Борисович', 'Пётр': 'Петрович',
+};
 
 const REPORT_CHECKS = {"r4-142": {"d": "2026-10-28", "ok": true, "why": "По орфоэпическому списку ФИПИ правильно **освЕдомиться**: ударение на корне во всех формах - освЕдомится, освЕдомятся. Запомни через «вЕдать» - знать."}, "r4-196": {"d": "2026-10-28", "ok": false, "why": "Ты была права: в списке ФИПИ 2026 - **дОсуха**, как дОверху и дОнизу. В старой версии программы было «досУха» - исправлено 15 октября."}, "r4-200": {"d": "2026-10-28", "ok": false, "why": "Ты была права: правильно **ненадОлго**, как надОлго. В старой версии программы было «ненАдолго» - исправлено 15 октября."}};
 /* ================= ОФЛАЙН-ВЕРСИЯ =================
@@ -4610,25 +4742,76 @@ const finNameP = w => `«${w.title}»${w.authorShort ? ` (${w.authorShort})` : '
       put('k', { id: `fin-k-${w.id}-${i + 1}`, type: 'card', q: `${finNameP(w)}. Аргумент «${a.title}»: вспомни эпизод и что он доказывает - потом проверь себя.`, a: a.ep, why: a.proves ? `**Что доказывает:** ${a.proves}` : '', work: w.id });
     });
   }
+  /* авторы полностью (tools/content/authors.js): выбрать точное имя и отчество среди похожих - fin-n-<произведение>,
+     и карточка «назови полностью» на каждого автора - fin-nc-<первое его произведение> */
+  FIN_KIND.n = 'авторы полностью';
+  const nameOf = s => { const m = String(s).match(/^(\S+) (\S+вич) (\S+)$/); return m ? { i: m[1], o: m[2], f: m[3] } : null; };
+  const NAME_OF = Object.fromEntries(Object.entries(PATRON).map(([n, o]) => [o, n])), named = FIN_W.map(w => nameOf(w.author)).filter(Boolean);
+  const traps = full => { // сначала частые путаницы, потом имя и отчество местами, потом имена и отчества других писателей
+    const p = nameOf(full); if (!p) return [];
+    const out = [...(AUTHOR_TRAPS[full] || [])];
+    if (NAME_OF[p.o] && PATRON[p.i] && NAME_OF[p.o] !== p.i) out.push(`${NAME_OF[p.o]} ${PATRON[p.i]} ${p.f}`);
+    for (const x of named) if (x.f !== p.f && x.i === p.i && x.o !== p.o) out.push(`${p.i} ${x.o} ${p.f}`);
+    for (const x of named) if (x.f !== p.f && x.o === p.o && x.i !== p.i) out.push(`${x.i} ${p.o} ${p.f}`);
+    for (const o of ['Сергеевич', 'Николаевич', 'Михайлович', 'Александрович', 'Иванович', 'Петрович']) if (o !== p.o) out.push(`${p.i} ${o} ${p.f}`);
+    return uniq(out).filter(x => x !== full);
+  };
+  const tip = a => AUTHOR_TIPS[a] ? ' ' + AUTHOR_TIPS[a] : '', byAuthor = {};
+  for (const w of FIN_W) {
+    if (!w.author) continue;
+    (byAuthor[w.author] = byAuthor[w.author] || []).push(w);
+    const X = AUTHOR_OPTS[w.author], right = X ? X.a : w.author, wrong = X ? X.o : traps(w.author).slice(0, 3);
+    if (wrong.length < 3) continue;
+    const id = 'fin-n-' + w.id, o = pickN([right, ...wrong], 4, rng(hashStr(id)));
+    put('n', { id, type: 'choice', q: X?.q ? X.q(w.title) : `«${w.title}»: кто автор? Выбери точно - имя, отчество и фамилию.`, o, a: o.indexOf(right), ex: `${finNameP(w)} - **${w.author}**.${tip(w.author)}`, work: w.id });
+  }
+  for (const [a, ws] of Object.entries(byAuthor)) {
+    const list = ws.map(w => `«${w.title}»`).join(', '), short = ws[0].authorShort;
+    put('n', { id: 'fin-nc-' + ws[0].id, type: 'card', q: `${list} - кто автор? Назови полностью${nameOf(a) ? ': имя, отчество и фамилию' : ''}.`, a, why: [AUTHOR_TIPS[a] || '', short && short !== a ? `На сочинении можно и с инициалами: **${short}**.` : ''].filter(Boolean).join('\n'), work: ws[0].id, works: ws.map(w => w.id) });
+  }
   /* тест по произведению: автор, жанр, кто есть кто, аргументы и вопросы FINAL_QUIZ про эту книгу.
      «Чей герой», «чья цитата» и «что подходит к теме» сюда не берём: в тесте по одной книге ответ на них очевиден */
   const st = t => { const s = t.toLowerCase().replace(/ё/g, 'е'), f = s.split(/\s+/)[0]; return f.length > 5 ? f.slice(0, -2) : s.slice(0, 6); };
   const guess = it => { const q = String(it?.q || '').toLowerCase().replace(/ё/g, 'е'); return FIN_W.filter(w => q.includes('«' + st(w.title))).map(w => w.id); };
   const pools = {}, add = (wid, id) => { if (!finWork(wid) || !ITEMS[id]) return; const p = pools[wid] = pools[wid] || []; if (!p.includes(id)) p.push(id); };
-  for (const k of ['a', 'g', 'r', 'k']) for (const id of TASK_ITEMS['fin:' + k] || []) add(ITEMS[id].work, id);
+  for (const k of ['a', 'g', 'r', 'k', 'n']) for (const id of TASK_ITEMS['fin:' + k] || []) for (const wid of ITEMS[id].works || [ITEMS[id].work]) add(wid, id);
   for (const id of TASK_ITEMS['fin:q'] || []) for (const wid of FQ_WORKS[id] || ITEMS[id].works || guess(ITEMS[id])) add(wid, id);
   for (const w of FIN_W) TASK_ITEMS['finw:' + w.id] = pools[w.id] || [];
 }
 
 /* ---- прочитала -> закрепила ---- */
 const finReadOf = id => state.readW?.[id] || null;
+const finReadWorks = () => FIN_W.filter(w => finReadOf(w.id));
 const finDone = w => { const m = mastery('finw:' + w.id); return m.total > 0 && m.pct >= 0.8; };
 const finQuizN = w => { const n = (TASK_ITEMS['finw:' + w.id] || []).length; return n <= 20 ? n : 15; };
-/* что читать дальше: избранное, которое ещё не закреплено, потом непрочитанное по порядку, потом самое слабое */
+/* к скольким темам есть аргументы из прочитанного и сколько новых тем закроет книга */
+const finCovered = () => { const read = new Set(finReadWorks().map(w => w.id)); return new Set(FIN_T.filter(t => (t.works || []).some(id => read.has(id))).map(t => t.id)); };
+const finGain = (w, cov = finCovered()) => FIN_T.filter(t => !cov.has(t.id) && (t.works || []).includes(w.id)).length;
+const finShort = w => /рассказ|повесть|стихотворение|сказка/.test(w.genre || '');
+/* что дальше: избранное, которое ещё не закреплено; прочитанное, но не закреплённое (тест ниже 80%);
+   потом новая книга, которая закроет больше всего новых тем (сначала короткие); потом самое слабое */
 function finNextWork() {
-  const open = w => !(finReadOf(w.id) && finDone(w));
-  return favWorks().map(finWork).filter(Boolean).find(open) || FIN_W.find(w => !finReadOf(w.id)) || [...FIN_W].filter(open).sort((a, b) => mastery('finw:' + a.id).pct - mastery('finw:' + b.id).pct)[0] || null;
+  const open = w => !(finReadOf(w.id) && finDone(w)), weak = (a, b) => mastery('finw:' + a.id).pct - mastery('finw:' + b.id).pct;
+  const fav = favWorks().map(finWork).filter(Boolean).find(open); if (fav) return fav;
+  const fix = finReadWorks().filter(w => !finDone(w)).sort(weak)[0]; if (fix) return fix;
+  const cov = finCovered(), next = FIN_W.filter(w => !finReadOf(w.id)).map(w => ({ w, g: finGain(w, cov) }))
+    .sort((a, b) => (b.g > 0) - (a.g > 0) || finShort(b.w) - finShort(a.w) || b.g - a.g)[0];
+  return next?.w || [...FIN_W].filter(open).sort(weak)[0] || null;
 }
+/* её прочитанное (31.10.2026 она написала, какие книги прочитала) - отмечаю один раз, дальше отметки только её */
+if (!state.readSeed) {
+  state.readW = state.readW || {};
+  for (const [id, d] of [['prest', '2026-10-29'], ['yushka', '2026-10-29'], ['doktor', '2026-10-29'], ['knopka', '2026-10-31'], ['siren', '2026-10-31'], ['kapdoch', '2026-10-31']]) if (finWork(id) && !state.readW[id]) state.readW[id] = d;
+  state.readSeed = today(); save();
+}
+/* «мои книги»: тест вперемешку по прочитанным и авторы прочитанных - пересчитываются перед каждым показом */
+Object.assign(FIN_KIND, { mine: 'мои книги', nmine: 'авторы моих книг' });
+function finMinePools() {
+  const read = finReadWorks().map(w => w.id), mine = id => { const it = ITEMS[id]; return (it.works || [it.work]).some(w => read.includes(w)); };
+  TASK_ITEMS['fin:mine'] = [...new Set(read.flatMap(id => TASK_ITEMS['finw:' + id] || []))];
+  TASK_ITEMS['fin:nmine'] = (TASK_ITEMS['fin:n'] || []).filter(mine);
+}
+finMinePools();
 function finReadBtn(w) {
   const rd = finReadOf(w.id);
   return `<button class="btn sm ${rd ? 'gold' : 'ghost'}" data-a="finRead" data-id="${esc(w.id)}" aria-pressed="${!!rd}">${ic('check', 16)} ${rd ? `Прочитано ${fmtD(rd)}` : 'Прочитала'}</button>`;
@@ -4685,11 +4868,20 @@ function finMoreHTML(w) {
 }
 finQuizHTML = function () {
   const ids = TASK_ITEMS['fin:all'] || []; if (!ids.length) return finSoon('Тренировка');
-  const m = mastery('fin:all'), errs = ids.filter(id => state.errors[id] && !state.errors[id].learned).length;
-  const kinds = Object.keys(FIN_KIND).filter(k => (TASK_ITEMS['fin:' + k] || []).length);
+  finMinePools();
+  const m = mastery('fin:all'), errs = ids.filter(id => state.errors[id] && !state.errors[id].learned).length, read = finReadWorks();
+  const kinds = Object.keys(FIN_KIND).filter(k => k !== 'mine' && k !== 'nmine' && (TASK_ITEMS['fin:' + k] || []).length);
+  const mineM = mastery('fin:mine'), nM = mastery('fin:nmine');
   const row = w => { const mw = mastery('finw:' + w.id), done = finDone(w); return `<button class="wq" data-a="finWorkQuiz" data-id="${esc(w.id)}"><span style="min-width:0"><b>«${esc(w.title)}»</b> <span class="muted small">${esc(w.authorShort || '')}</span>${finReadOf(w.id) ? ' <span class="okmark">прочитано</span>' : ''}<span class="bar ${done ? '' : 'violet'}" style="height:6px;margin-top:6px;display:block"><i style="width:${mw.pct * 100}%"></i></span></span><span class="wqs num" style="${done ? 'color:var(--good)' : ''}">${mw.ok}/${mw.total}</span></button>`; };
-  return `<section class="card">
-    <div class="row sb"><span class="kicker">Твой прогресс</span><span class="num muted small">${Math.round(m.pct * 100)}%</span></div>
+  return `<section class="card" style="border-left:5px solid var(--rose)">
+    <div class="row sb"><h2 class="h2">Мои книги</h2><span class="kicker">прочитано ${read.length}</span></div>
+    <p class="muted small" style="margin:0">${read.length ? read.map(w => `«${esc(w.title)}»`).join(', ') + '. Тесты только по ним - чтобы закрепить прочитанное.' : 'Отмечай книги «Прочитала» в их карточках - здесь появятся тесты только по ним.'}</p>
+    ${read.length ? `<button class="btn primary block" data-a="startKey" data-k="fin:mine" data-n="10">${ic('play', 18)} Мои книги вперемешку <span class="num" style="opacity:.8">${mineM.ok}/${mineM.total}</span></button>
+    <button class="btn block" data-a="startKey" data-k="fin:nmine" data-n="10">${ic('pen', 18)} Авторы моих книг <span class="num muted">${nM.ok}/${nM.total}</span></button>` : ''}
+    <button class="btn sm ghost" data-a="startKey" data-k="fin:n" data-n="10">Все авторы полностью: ${(TASK_ITEMS['fin:n'] || []).length}</button>
+  </section>
+  <section class="card">
+    <div class="row sb"><span class="kicker">Все книги вперемешку</span><span class="num muted small">${Math.round(m.pct * 100)}%</span></div>
     <div class="big">${m.ok}<span>/${m.total}</span></div><div class="bar"><i style="width:${m.pct * 100}%"></i></div>
     <p class="muted small" style="margin:0">Всё вперемешку: кто автор (полностью - имя, отчество, фамилия), чей герой и кто есть кто, жанр, цитаты, аргументы (вспомни эпизод и вывод), что подходит к теме. В красной тетради: ${errs}.</p>
     <button class="btn primary block" data-a="startKey" data-k="fin:all" data-n="10">${ic('play', 18)} 10 заданий</button>
@@ -4698,19 +4890,8 @@ finQuizHTML = function () {
   </section>
   <section class="card"><div class="row sb"><h2 class="h2">По одному произведению</h2><span class="kicker">${FIN_W.filter(finDone).length} из ${FIN_W.length} сдано</span></div>
     <p class="muted small" style="margin:0">Прочитала карточку - сразу закрепи. Зелёный - тест сдан на 80% и больше.</p>
-    <div>${FIN_W.map(row).join('')}</div></section>`;
+    <div>${[...FIN_W].sort((a, b) => !!finReadOf(b.id) - !!finReadOf(a.id)).map(row).join('')}</div></section>`;
 };
-/* карточка итогового сочинения на главной */
-function finHomeCard() {
-  if (!FIN_W.length) return '';
-  const fd = daysTo(ESSAY_DATE), N = FIN_W.length, rd = FIN_W.filter(w => finReadOf(w.id)).length, done = FIN_W.filter(finDone).length, nx = finNextWork();
-  return `<section class="card" style="border-left:5px solid var(--rose)">
-    <div class="row sb"><h2 class="h2">Итоговое сочинение</h2><span class="kicker">${fd >= 0 ? `${fmtD(ESSAY_DATE)} · через ${fd} ${plural(fd, 'день', 'дня', 'дней')}` : 'допуск к ЕГЭ'}</span></div>
-    <div class="blk"><div class="row sb small"><span>Прочитано произведений</span><span class="num">${rd} из ${N}</span></div><div class="bar"><i style="width:${rd / N * 100}%"></i></div></div>
-    <div class="blk"><div class="row sb small"><span>Тест по книге сдан</span><span class="num">${done} из ${N}</span></div><div class="bar violet"><i style="width:${done / N * 100}%"></i></div></div>
-    <div class="row">${nx ? `<button class="btn primary" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} «${esc(nx.title)}»</button>` : ''}${rd ? `<button class="btn violet" data-a="finParaMine">${ic('pen', 18)} Аргумент к теме</button>` : ''}<button class="btn" data-a="tab" data-t="final">Все разделы</button></div>
-  </section>`;
-}
 
 /* ---- вкладка «Слова»: слова к темам, готовые фразы, как писать без воды, тренажёр синонимов ---- */
 function finWordsHTML() {
@@ -4730,7 +4911,6 @@ function finWordsHTML() {
 }
 
 /* ---- абзац-аргумент по своим книгам: тема подбирается к прочитанным произведениям, после - сверка с образцом ---- */
-const finReadWorks = () => FIN_W.filter(w => finReadOf(w.id));
 finParaPick = function (prev) {
   const read = new Set(finReadWorks().map(w => w.id));
   const mine = FIN_T.filter(t => t.id !== prev && (t.works || []).some(id => read.has(id)));
@@ -4836,7 +5016,7 @@ async function copyForClaude(t) {
   catch { openSheet(`<h2 class="h2">Скопируй и отправь Claude</h2><textarea class="codebox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`); }
 }
 function reportsText() {
-  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 70» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
+  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 100» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
     const it = getItem(r.id);
     return `${i + 1}. [${r.id}] ${it ? `${itemLabel(it)} - ${questionText(it)}` : 'задание не найдено'}${it && it.o && it.type !== 'stress' ? `\n   Варианты: ${it.o.join(' | ')}` : ''}\n   Мой ответ: ${r.my || '-'} · ответ программы: ${it ? correctText(it) : '-'} · ${r.d || ''}${r.after ? ` · повторно: не согласна с ответом от ${r.after}` : ''}`;
   }).join('\n');
@@ -4902,7 +5082,7 @@ function vData() {
   <section class="card"><h2 class="h2">Как поставить на телефон</h2>
     <p style="margin:0"><b>iPhone:</b> открой ссылку в Safari → «Поделиться» → «На экран «Домой»».</p>
     <p style="margin:0"><b>Android:</b> открой ссылку в Chrome → меню ⋮ → «Установить приложение» или «Добавить на главный экран».</p>
-    <p class="muted small" style="margin:0">Дальше открывай значком «ЕГЭ на 70» - и без интернета тоже.${B.version ? ` Версия ${esc(B.version)}` : ''}${B.content ? `, материалы от ${esc(fmtD(B.content))}` : ''}.</p></section>`;
+    <p class="muted small" style="margin:0">Дальше открывай значком «ЕГЭ на 100» - и без интернета тоже.${B.version ? ` Версия ${esc(B.version)}` : ''}${B.content ? `, материалы от ${esc(fmtD(B.content))}` : ''}.</p></section>`;
 }
 Object.assign(A, {
   openData: () => { closeSheet(); go({ v: 'data' }); },
@@ -4930,14 +5110,14 @@ Object.assign(A, {
   finRead: b => {
     const id = b.dataset.id; if (!finWork(id)) return; state.readW = state.readW || {};
     const on = !state.readW[id]; if (on) state.readW[id] = today(); else delete state.readW[id];
-    save(); render(); toast(on ? 'Прочитано! Теперь закрепи - тест по этой книге' : 'Сняла отметку «прочитано»');
+    finMinePools(); save(); render(); toast(on ? 'Прочитано! Теперь закрепи - тест по этой книге' : 'Сняла отметку «прочитано»');
   },
   finWorkQuiz: b => {
     const w = finWork(b.dataset.id); if (!w) return;
     const key = 'finw:' + w.id; startPool(`«${w.title}»`, TASK_ITEMS[key] || [], finQuizN(w), { key });
   },
   exportFile: async () => {
-    const name = `ege70-progress-${today()}.json`, file = new File([backupJSON()], name, { type: 'application/json' });
+    const name = `ege100-progress-${today()}.json`, file = new File([backupJSON()], name, { type: 'application/json' });
     const done = () => { state.backupAt = today(); save(); if (ui.route.v === 'data') render(); };
     if (isIOS() && navigator.canShare?.({ files: [file] })) {
       try { await navigator.share({ files: [file], title: 'Копия прогресса ЕГЭ' }); done(); toast('Копия сохранена'); }
@@ -5007,6 +5187,254 @@ function showUpd() {
   });
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (had) showUpd(); });
 })();
+
+/* ================= ПЛАН ДНЯ И ГЛАВНЫЙ ЭКРАН «ЕГЭ на 100» =================
+   Её просьба 31.10.2026: «нет чёткого понимания, что мне сейчас проходить… глаза разбегаются… составь чёткий план».
+   Главная показывает план дня: 2-4 шага на 30-45 минут, остальное спрятано в «Ещё». Шаг отмечается сам:
+   ответы считаются по предметам и тренировкам (day().t), письменные шаги - по словам, написанным сегодня (day().w),
+   а сделанное без телефона (сочинение на бумаге) отмечается руками (day().m).
+   Этапы и ритм недели (PLAN_PHASES) - одни на главной, на экране «План до ЕГЭ» и после каждой тренировки. */
+
+const PLAN_PHASES = [
+  { id: 'p1', from: '2026-09-01', to: '2026-12-02', when: 'до 2 декабря', name: 'Итоговое сочинение и старт русского', tag: 'сочинение + русский',
+    focus: 'Главное сейчас - зачёт по итоговому сочинению 2 декабря. Каждый день понемногу русский, чтобы ЕГЭ тоже двигался. Обществознание и английский подключаем после 2 декабря - сейчас не распыляемся.',
+    days: { 1: ['book', 'ru', 'err'], 2: ['para', 'ru', 'err'], 3: ['authors', 'ru', 'err'], 4: ['para', 'ru', 'err'], 5: ['book', 'ru', 'err'], 6: ['full', 'err'], 0: ['mybooks', 'words', 'err'] } },
+  { id: 'p2', from: '2026-12-03', to: '2027-01-31', when: '3 декабря - январь', name: 'Русский: орфография и пунктуация', tag: 'русский + общество и английский',
+    focus: 'Русский каждый день: «Продолжить» сама даёт задания 9-20 и слабые места. Через день - обществознание и английский. В субботу по очереди - пробник тестовой части и сочинение ЕГЭ.',
+    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'soc', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['sat', 'err'], 0: ['err'] } },
+  { id: 'p3', from: '2027-02-01', to: '2027-03-31', when: 'февраль - март', name: 'Сочинение ЕГЭ и пробники', tag: 'сочинение ЕГЭ + пробники',
+    focus: 'Сочинение ЕГЭ (задание 27) и пробник - по очереди каждую субботу. Обществознание - все темы, английский - чтение и письмо.',
+    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'soc', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['sat', 'err'], 0: ['err'] } },
+  { id: 'p4', from: '2027-04-01', to: '2027-07-31', when: 'апрель - экзамен', name: 'Пробники и повторение', tag: 'пробники + повторение',
+    focus: 'Пробник каждую субботу, марафон всей красной тетради. Новых тем не берём - доводим до идеала то, что знаешь.',
+    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'soc', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['mock', 'err'], 0: ['err'] } },
+];
+const PLAN_SPECIAL = { '2026-12-01': ['review', 'err'], '2026-12-02': ['exam'] };
+const PLAN_NAMES = { book: 'книга дня', para: 'аргумент к теме', authors: 'авторы', words: 'слова', mybooks: 'мои книги', full: 'сочинение целиком', review: 'повторить книги', exam: 'итоговое сочинение',
+  ru: 'русский 15', soc: 'общество 10', en: 'английский 10', mock: 'пробник', ess27: 'сочинение ЕГЭ', sat: 'пробник или сочинение ЕГЭ', err: 'ошибки' };
+/* письменный шаг засчитан, когда сегодня в поле написано не меньше need слов и из них новых - не меньше gain */
+const PLAN_WRITE = { fpText: ['para', 50, 40], fText: ['full', 250, 200], esText: ['ess27', 150, 120] };
+
+const planPhase = (k = today()) => PLAN_PHASES.find(p => k >= p.from && k <= p.to) || (k < PLAN_PHASES[0].from ? PLAN_PHASES[0] : PLAN_PHASES[PLAN_PHASES.length - 1]);
+function planIds(k = today()) {
+  if (PLAN_SPECIAL[k]) return PLAN_SPECIAL[k];
+  const ids = planPhase(k).days[D(k).getDay()] || [], wk = Math.floor(Math.round((D(k) - D('2026-11-30')) / 864e5) / 7);
+  return ids.map(id => id === 'sat' ? (wk % 2 ? 'ess27' : 'mock') : id); // суббота: пробник и сочинение ЕГЭ по очереди
+}
+/* один шаг плана: что делать, сколько минут, сделан ли */
+function planStep(id, k, d) {
+  const t = d.t || {}, w = d.w || {}, N = state.settings.norm || 15, due = errDue().length;
+  const S = {
+    book: () => {
+      const b = finWork(d.pk?.book) || finNextWork(); if (!b) return null;
+      const rd = !!finReadOf(b.id), g = rd ? 0 : finGain(b), tested = Object.keys(t).filter(x => x.startsWith('s:finw:')).reduce((a, x) => a + t[x], 0);
+      return { area: 'Сочинение', min: rd ? 15 : 45, w: b.id, go: rd ? 'Пройти тест' : 'Открыть карточку',
+        title: rd ? `Закрепить «${b.title}»` : `Новая книга: «${b.title}»`,
+        sub: rd ? `${b.authorShort || b.author}. Тест по книге: автор полностью, герои, аргументы.` : `${b.authorShort || b.author}, ${b.genre}${g ? ` - аргументы ещё к ${g} ${plural(g, 'теме', 'темам', 'темам')}` : ''}. Прочитай, нажми «Прочитала» - и тест по книге.`,
+        done: tested >= 8 || Object.values(state.readW || {}).includes(k) };
+    },
+    para: () => ({ area: 'Сочинение', min: 15, go: 'Написать', title: 'Аргумент к теме', sub: 'Тема из банка ФИПИ и твоя книга: абзац на 50-120 слов. Потом сверь себя с образцом.', done: !!w.para }),
+    authors: () => ({ area: 'Сочинение', min: 5, go: 'Начать', title: 'Авторы моих книг', sub: 'Имя, отчество, фамилия - с ловушками вроде «Иван Александрович» вместо «Александр Иванович».', done: (t['fin:n'] || 0) >= 8 }),
+    words: () => ({ area: 'Сочинение', min: 10, go: 'Начать', title: 'Слова к темам', sub: '10 слов: вспомни близкие по смыслу - чтобы в сочинении не было повторов.', done: (t['fin:v'] || 0) >= 10 }),
+    mybooks: () => ({ area: 'Сочинение', min: 10, go: 'Начать', title: 'Мои книги вперемешку', sub: 'Вопросы по всем прочитанным книгам: проверь, что помнишь.', done: (t['s:fin:mine'] || 0) >= 10 }),
+    full: () => ({ area: 'Сочинение', min: 70, go: 'Написать', title: 'Сочинение целиком', sub: 'Как на экзамене: тема, 350+ слов, потом самопроверка по галочкам. Писала на бумаге - отметь кружок слева.', done: !!w.full }),
+    review: () => ({ area: 'Сочинение', min: 30, go: 'Мои книги', title: 'Завтра итоговое сочинение', sub: 'Перечитай «Кратко» и аргументы своих книг и план «Как писать». Новое сегодня не учи. Выспись!', done: false }),
+    exam: () => ({ area: 'Сочинение', min: 0, go: null, title: 'Сегодня итоговое сочинение', sub: 'Паспорт, чёрная гелевая ручка, вода. Вступление - два аргумента - вывод, от 350 слов. Ты готовилась - всё получится!', done: false }),
+    ru: () => ({ area: 'Русский ЕГЭ', min: 15, go: 'Начать', title: `${N} заданий`, sub: 'Задания 1-26 вперемешку: программа сама даёт то, что сейчас важнее всего.', count: [Math.min(t.ru || 0, N), N], done: (t.ru || 0) >= N }),
+    soc: () => ({ area: 'Обществознание', min: 15, go: 'Начать', title: '10 заданий', sub: 'Темы вперемешку, ошибки уйдут в красную тетрадь.', count: [Math.min(t.soc || 0, 10), 10], done: (t.soc || 0) >= 10 }),
+    en: () => ({ area: 'Английский', min: 15, go: 'Начать', title: '10 заданий', sub: 'Грамматика, словообразование, лексика.', count: [Math.min(t.en || 0, 10), 10], done: (t.en || 0) >= 10 }),
+    mock: () => ({ area: 'Русский ЕГЭ', min: 60, go: 'Начать', title: 'Пробник тестовой части', sub: '26 заданий по порядку, как на экзамене, - и баллы по шкале ЕГЭ.', done: state.mocks.some(x => x.d === k) }),
+    ess27: () => ({ area: 'Русский ЕГЭ', min: 60, go: 'Написать', title: 'Сочинение ЕГЭ (задание 27)', sub: 'Позиция автора, два примера с пояснением, связь между ними, своё мнение. От 150 слов.', done: !!w.ess27 }),
+    err: () => errList().some(e => !e.learned) ? { area: 'Ошибки', min: Math.max(5, Math.min(20, Math.ceil(due / 2))), go: 'Начать', title: due ? `Повторить ошибки: ${due}` : 'Ошибки на сегодня повторены', sub: 'Красная тетрадь: три верных ответа в разные дни - и ошибка выучена.', done: due === 0 } : null,
+  };
+  const s = S[id]?.(); if (!s) return null;
+  const auto = !!s.done;
+  return { id, ...s, auto, done: auto || !!d.m?.[id] };
+}
+function planToday(k = today()) {
+  const d = day(k), ph = planPhase(k), steps = planIds(k).map(id => planStep(id, k, d)).filter(Boolean);
+  return { k, ph, steps, done: steps.filter(s => s.done).length };
+}
+/* итог дня для полоски недели: [сделано, всего] */
+function planSnap(P) { const d = day(P.k), v = [P.done, P.steps.length]; if (!d.pl || d.pl[0] !== v[0] || d.pl[1] !== v[1]) { d.pl = v; save(); } }
+/* серия: дни подряд, когда план выполнен целиком; выходные без шагов серию не рвут */
+function planStreak() {
+  let k = today(), n = 0; const full = x => x && x[1] > 0 && x[0] >= x[1], rest = x => x && x[1] === 0;
+  if (!full(state.days[k]?.pl)) k = addDays(k, -1);
+  for (let i = 0; i < 400; i++, k = addDays(k, -1)) { const pl = state.days[k]?.pl; if (full(pl)) n++; else if (!rest(pl)) break; }
+  return n;
+}
+
+/* ---- учёт: ответы сегодня по предметам, видам заданий итогового и тренировкам ---- */
+const record0 = record;
+record = function (it, ok, my) {
+  const d = day(), t = d.t = d.t || {}, inc = x => { t[x] = (t[x] || 0) + 1; };
+  if (it?.subj) inc(it.subj);
+  if (it?.subj === 'fin' && it.task) inc('fin:' + it.task);
+  if (ses?.key) inc('s:' + ses.key);
+  return record0(it, ok, my);
+};
+/* письменные шаги: сколько слов было в поле, когда она его открыла сегодня (или меньше всего за день), - новые слова = разница.
+   Так засчитывается и написанное заново, и вставленное целиком, а вчерашний текст без новых слов - нет */
+document.addEventListener('focusin', e => {
+  if (!PLAN_WRITE[e.target?.id]) return;
+  const d = day(), lo = d.wl = d.wl || {}; if (lo[e.target.id] == null) { lo[e.target.id] = words(e.target.value); save(); }
+});
+document.addEventListener('input', e => {
+  const W = PLAN_WRITE[e.target?.id]; if (!W) return;
+  const n = words(e.target.value), d = day(), lo = d.wl = d.wl || {}, w = d.w = d.w || {};
+  lo[e.target.id] = Math.min(lo[e.target.id] ?? n, n);
+  if (!w[W[0]] && n >= W[1] && n - lo[e.target.id] >= W[2]) { w[W[0]] = 1; save(); }
+});
+
+/* ---- главный экран ---- */
+ICONS.right = '<path d="M9 5l7 7-7 7"/>';
+const COVER_LINES = ['Цель - сотка. Каждый день по шагу.', 'Сотка складывается из маленьких дней.', 'Не идеально, а каждый день.', 'Сделала план дня - день засчитан.', 'Сегодняшние 40 минут - это баллы в мае.', 'Ты уже в пути. Просто следующий шаг.'];
+function coverHTML() {
+  const ed = daysTo(ESSAY_DATE), xd = daysTo(EXAM_DATE), n = Math.round(D(today()) / 864e5);
+  return `<section class="cover">
+    <div class="cv-brand"><span class="cv-k">ЕГЭ<br>на</span><span class="cv-n">100</span></div>
+    <p class="cv-sub">${COVER_LINES[((n % COVER_LINES.length) + COVER_LINES.length) % COVER_LINES.length]}</p>
+    <div class="cv-pills">${ed >= 0 ? `<button class="cv-pill" data-a="openFinal">${ic('pen', 15)} Итоговое ${ed ? `через ${ed} ${plural(ed, 'день', 'дня', 'дней')}` : 'сегодня'}</button>` : ''}${xd >= 0 ? `<button class="cv-pill" data-a="openPlan">${ic('cap', 15)} ЕГЭ - примерно через ${xd} ${plural(xd, 'день', 'дня', 'дней')}</button>` : ''}</div>
+  </section>`;
+}
+function planGoBtn(s, primary) {
+  return s.go ? `<button class="btn sm ${primary ? 'primary' : ''} pgo" data-a="planGo" data-s="${s.id}"${s.w ? ` data-w="${esc(s.w)}"` : ''}>${ic('play', 16)} ${esc(s.go)}</button>` : '';
+}
+function planStepHTML(s, i, cur) {
+  return `<div class="pstep ${s.done ? 'done' : ''}">
+    <button class="pchk" data-a="planTick" data-s="${s.id}" aria-pressed="${s.done}" aria-label="${s.done ? 'Сделано' : 'Отметить сделанным'}">${s.done ? ic('check', 20) : i + 1}</button>
+    <div class="pbody"><div class="parea">${esc(s.area)}${s.min ? ` · ${s.min} мин` : ''}</div><div class="pttl">${esc(s.title)}</div>
+      ${s.done ? '' : `${s.sub ? `<div class="psub">${esc(s.sub)}</div>` : ''}${s.count && s.count[0] ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${s.count[0] / s.count[1] * 100}%"></i></div>` : ''}${planGoBtn(s, cur)}`}
+    </div></div>`;
+}
+function planCardHTML(P) {
+  const n = P.steps.length, left = P.steps.filter(s => !s.done), first = left[0], mins = left.reduce((a, s) => a + s.min, 0);
+  const head = `<div class="row sb"><h2 class="h2">План на сегодня</h2>${n ? `<span class="kicker num">${P.done} из ${n}</span>` : ''}</div>`;
+  if (!n) return `<section class="card plan">${head}<p style="margin:0"><b>Выходной.</b> Отдых - тоже часть подготовки. Захочется позаниматься - «Ещё» внизу.</p><button class="linkbtn" data-a="openPlan">Весь план до ЕГЭ ${ic('right', 16)}</button></section>`;
+  return `<section class="card plan">${head}
+    <div class="bar"><i style="width:${P.done / n * 100}%"></i></div>
+    <div class="muted small">${!left.length ? 'Всё сделано - день засчитан!' : mins ? `Осталось примерно ${mins} мин` : 'Удачи!'} · этап: ${esc(P.ph.tag)}</div>
+    <div>${P.steps.map((s, i) => planStepHTML(s, i, s === first)).join('')}</div>
+    ${left.length ? '' : `<div class="pdone">${ic('star', 22)}<div><b>План дня выполнен!</b><div class="small">Завтра - следующий шаг. Хочешь ещё - «Ещё» внизу.</div></div></div>`}
+    <button class="linkbtn" data-a="openPlan">Весь план до ЕГЭ ${ic('right', 16)}</button>
+  </section>`;
+}
+function weekHTML() {
+  const t = today(), mon = addDays(t, -((D(t).getDay() + 6) % 7)), names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], st = planStreak();
+  const cells = names.map((nm, i) => {
+    const k = addDays(mon, i), pl = state.days[k]?.pl, cls = k > t ? 'fut' : pl && pl[1] > 0 && pl[0] >= pl[1] ? 'full' : pl && pl[1] === 0 ? 'rest' : pl && pl[0] ? 'part' : '';
+    return `<div class="wd ${cls} ${k === t ? 'today' : ''}"><i>${cls === 'full' ? ic('check', 16) : D(k).getDate()}</i><span>${nm}</span></div>`;
+  });
+  return `<section class="card"><div class="row sb"><h2 class="h2">Неделя</h2><span class="chip fire">${ic('flame', 16)} ${st ? `${st} ${plural(st, 'день', 'дня', 'дней')} по плану` : 'серия начнётся с плана дня'}</span></div><div class="week">${cells.join('')}</div></section>`;
+}
+function progressHTML(ph) {
+  const read = finReadWorks(), fixed = read.filter(finDone).length, cov = finCovered().size, g = mainGift(), best = bestMock();
+  let ok = 0, tot = 0; for (let n = 1; n <= 26; n++) { const m = mastery('ru:' + n); ok += m.ok; tot += m.total; }
+  const ru = tot ? ok / tot : 0, pct = x => Math.round(x * 100) + '%';
+  const row = (a, icon, cls, title, meta, val, style = '') => `<button class="prow" ${a}><span class="tnum ${cls}" style="${style}">${ic(icon, 22)}</span><span style="min-width:0"><span class="ttl">${title}</span><br><span class="tmeta">${meta}</span></span><span class="pts num">${val}</span></button>`;
+  return `<section class="card"><h2 class="h2">Мой прогресс</h2><div>
+    ${ph.id === 'p1' ? row('data-a="tab" data-t="final"', 'pen', '', 'Итоговое сочинение', `прочитано ${read.length}, закреплено ${fixed} · аргументы к ${cov} из ${FIN_T.length} тем`, pct(FIN_T.length ? cov / FIN_T.length : 0)) : ''}
+    ${row('data-a="tab" data-t="ru"', 'book', 'theory', 'Русский ЕГЭ', `задания 1-26${best ? ` · лучший пробник ${best} из 28` : ' · пробник ещё впереди'}`, pct(ru))}
+    ${ph.id === 'p1' ? '' : row('data-a="tab" data-t="soc"', 'scale', 'theory', 'Обществознание', 'все темы', pct(poolPct(keysOf('soc:'))))}
+    ${ph.id === 'p1' ? '' : row('data-a="tab" data-t="en"', 'globe', 'theory', 'Английский', 'все разделы', pct(poolPct(keysOf('en:'))))}
+    ${row('data-a="openGifts"', 'gift', '', 'Копилка', g ? `на «${esc(g.title)}» - ${pct(Math.min(1, state.coins / g.cost))}` : 'добавь подарок, на который копишь', rub(state.coins), 'background:var(--gold-soft);color:var(--gold)')}
+  </div></section>`;
+}
+function moreHTML() {
+  const un = errList().filter(e => !e.learned).length, lastEssay = state.essays[0]?.result?.total, open = ui.finOpen?.['home-more'];
+  return `<details class="more" data-fd="home-more" ${open ? 'open' : ''}><summary>Ещё: быстрые тренировки, обещания, вехи</summary><div class="stack">
+    <section class="card"><h2 class="h2">Быстро, по 10</h2><div class="row"><button class="btn sm" data-a="quick" data-k="stress">10 ударений</button><button class="btn sm" data-a="startExcAll">10 исключений</button><button class="btn sm" data-a="quick" data-k="mix">10 вперемешку</button><button class="btn sm" data-a="quick" data-k="soc">10 по обществу</button><button class="btn sm" data-a="quick" data-k="en">10 по английскому</button></div>${un ? `<button class="btn block" data-a="tab" data-t="err">${ic('note', 18)} Красная тетрадь: ${un} ${plural(un, 'ошибка', 'ошибки', 'ошибок')}</button>` : ''}</section>
+    ${weakHomeCard()}
+    ${favRow()}
+    <section class="card"><h2 class="h2">Мои обещания на сегодня</h2><div>${promisesHTML()}</div></section>
+    ${planCard()}
+    <section class="card"><h2 class="h2">Путь к 100: русский по блокам</h2>
+      <p class="muted small" style="margin:0">100 баллов - это все 50 первичных: 28 за тест и 22 за сочинение. Цель для каждого блока - 90% и выше.</p>
+      ${BLOCK_MAP.map(([name, ns]) => { const p = blockPct(ns); return `<div class="blk"><div class="row sb small"><span>${name} <span class="muted">(${ns.length > 1 ? ns[0] + '-' + ns[ns.length - 1] : ns[0]})</span></span><span class="num">${Math.round(p * 100)}%</span></div><div class="bar ${p >= 0.9 ? '' : 'violet'}"><i style="width:${p * 100}%"></i></div></div>`; }).join('')}
+      <div class="blk"><div class="row sb small"><span>Сочинение <span class="muted">(27)</span></span><span class="num">${lastEssay != null ? lastEssay + ' из 22' : 'ещё не проверяли'}</span></div><div class="bar violet"><i style="width:${lastEssay != null ? lastEssay / 22 * 100 : 0}%"></i></div></div>
+    </section>
+    ${fipiCard()}
+  </div></details>`;
+}
+vHome = function () {
+  const P = planToday(); planSnap(P);
+  return `<header class="stack" style="gap:4px;padding-top:6px"><div class="kicker">${WD[new Date().getDay()]}, ${fmtD(today())}</div><h1 class="h1">Привет, Даша!</h1><div class="muted small">офлайн-версия, всё на этом устройстве · ${dataLinkHTML()}</div></header>
+  ${resumeCard()}
+  ${coverHTML()}
+  ${planCardHTML(P)}
+  ${weekHTML()}
+  ${progressHTML(P.ph)}
+  ${moreHTML()}`;
+};
+
+/* ---- после тренировки: следующий шаг плана ---- */
+const vSesEnd0 = vSesEnd;
+vSesEnd = function () {
+  const h = vSesEnd0(), P = planToday(); planSnap(P);
+  if (!P.steps.length) return h;
+  const nx = P.steps.find(s => !s.done);
+  return h + `<section class="card pnext">${nx ? `<div class="kicker">План дня · ${P.done} из ${P.steps.length}</div><div class="pttl">Дальше: ${esc(nx.title)}</div><div class="psub">${esc(nx.area)}${nx.min ? ` · ${nx.min} мин` : ''}</div><div class="row">${planGoBtn(nx, true)}<button class="btn sm" data-a="sesHome">К плану дня</button></div>`
+    : `<div class="pdone">${ic('star', 22)}<div><b>План дня выполнен!</b><div class="small">Все шаги на сегодня сделаны - можно отдыхать.</div></div></div>`}</section>`;
+};
+
+/* ---- экран «План до ЕГЭ» ---- */
+{
+  const m3 = MILESTONES.find(m => m.id === 'm3'), m7 = MILESTONES.find(m => m.id === 'm7');
+  if (m3) m3.t = 'Пробник русского: тест от 22 из 28 - уровень 70';
+  if (m7) m7.t = 'Пробник русского: от 25 из 28 - уровень 80';
+  MILESTONES.push(
+    { id: 'm10', d: '2027-04-30', t: 'Сочинение ЕГЭ: от 20 из 22', auto: () => state.essays.some(e => (e.result?.total || 0) >= 20) },
+    { id: 'm11', d: '2027-05-15', t: 'Пробник русского: от 27 из 28 - уровень 90+', auto: () => bestMock() >= 27, pct: () => bestMock() / 27 },
+  );
+  MILESTONES.sort((a, b) => a.d.localeCompare(b.d));
+}
+vPlan = function () {
+  const t = today(), cur = planPhase(t), wd = D(t).getDay(), next = MILESTONES.find(m => !msDone(m));
+  const cap = s => s[0].toUpperCase() + s.slice(1);
+  const days = ph => `<table class="tbl wrap ptbl"><tbody>${[1, 2, 3, 4, 5, 6, 0].map(i => `<tr class="${ph === cur && i === wd ? 'on' : ''}"><td>${cap(WD[i])}</td><td>${(ph.days[i] || []).map(x => PLAN_NAMES[x]).join(' · ') || 'выходной'}</td></tr>`).join('')}</tbody></table>`;
+  const read = finReadWorks(), cov = finCovered().size, nx = finNextWork(), gain = nx && !finReadOf(nx.id) ? finGain(nx) : 0;
+  return `<button class="back" data-a="back">${ic('left', 18)} Назад</button>
+  <header class="stack" style="gap:6px"><div class="kicker">Цель - 100</div><h1 class="h1">План до ЕГЭ</h1><p class="muted" style="margin:0">Держать всё в голове не нужно. Каждый день на главной - 2-4 шага на 30-45 минут. Сделала шаг - галочка ставится сама.</p></header>
+  <section class="card" style="border-left:5px solid var(--rose)"><div class="kicker">Сейчас · ${esc(cur.when)}</div><h2 class="h2">${esc(cur.name)}</h2><p style="margin:0">${esc(cur.focus)}</p>${days(cur)}<p class="muted small" style="margin:0">Ошибки - каждый день, если есть что повторить. ${cur.id === 'p1' ? '1 декабря - повторить свои книги, 2 декабря - итоговое сочинение.' : ''}</p></section>
+  ${cur.id === 'p1' ? `<section class="card"><h2 class="h2">Книги для итогового</h2>
+    <div class="blk"><div class="row sb small"><span>Темы, к которым у тебя есть аргументы</span><span class="num">${cov} из ${FIN_T.length}</span></div><div class="bar"><i style="width:${FIN_T.length ? cov / FIN_T.length * 100 : 0}%"></i></div></div>
+    <p class="muted small" style="margin:0">${read.length ? `Прочитано: ${read.map(w => `«${esc(w.title)}»`).join(', ')}.` : 'Отмечай прочитанные книги - здесь будет видно, к каким темам хватает аргументов.'} На сочинении хватит 4-5 книг, которые знаешь хорошо.</p>
+    ${nx ? `<button class="btn block" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} ${finReadOf(nx.id) ? 'Закрепить' : 'Следующая'}: «${esc(nx.title)}»${gain ? ` (+${gain} ${plural(gain, 'тема', 'темы', 'тем')})` : ''}</button>` : ''}</section>` : ''}
+  <section class="card"><h2 class="h2">Этапы до экзамена</h2><div>${PLAN_PHASES.map(ph => { const now = ph === cur, past = t > ph.to; return `<div class="ph ${now ? 'now' : past ? 'past' : ''}"><span class="phd">${past ? ic('check', 14) : ''}</span><div style="min-width:0"><div class="row sb"><b>${esc(ph.name)}</b>${now ? '<span class="chip fire">сейчас</span>' : ''}</div><div class="muted small">${esc(ph.when)}</div>${now ? '' : `<p class="small" style="margin:4px 0 0">${esc(ph.focus)}</p>`}</div></div>`; }).join('')}</div></section>
+  <section class="card"><h2 class="h2">Вехи</h2><div>${MILESTONES.map(m => { const done = msDone(m), late = !done && m.d < t, p = m.pct ? Math.max(0, Math.min(1, m.pct())) : null; return `<div class="ms"><button class="chk ${done ? 'on' : ''}" style="border:0;padding:0;width:auto" data-a="msTog" data-id="${m.id}" aria-label="Отметить"><span class="box">${ic('check', 18)}</span></button><div style="min-width:0"><div style="font-weight:800;${done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.t)}</div>${p != null && !done ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${p * 100}%"></i></div>` : ''}</div><span class="when" style="${late ? 'color:var(--bad)' : ''}">до ${fmtD(m.d)}</span></div>`; }).join('')}</div></section>
+  <section class="card"><h2 class="h2">Сколько нужно на 100</h2><p style="margin:0">100 баллов по русскому - это все <b>50 первичных</b>: 28 за тестовую часть и 22 за сочинение. Ступеньки (шкала 2026 года, примерно): 70 баллов - около 38 первичных, 80 - около 43, 90 - около 47.</p><p class="muted small" style="margin:0">Итоговое сочинение - это зачёт или незачёт: допуск к ЕГЭ, баллы за него не ставят.</p></section>
+  ${next ? '' : '<section class="card celebrate"><div class="h2">Все вехи взяты!</div></section>'}`;
+};
+
+/* ---- действия ---- */
+Object.assign(A, {
+  planGo: b => {
+    const id = b.dataset.s, start = k => { const pool = TASK_ITEMS[k] || []; if (pool.length) startPool(keyTitle(k), pool, 10, { key: k }); else toast('Здесь пока нечего решать'); };
+    if (id === 'book') {
+      const w = finWork(b.dataset.w); if (!w) return;
+      const d = day(); d.pk = { ...(d.pk || {}), book: w.id }; save();
+      if (finReadOf(w.id)) A.finWorkQuiz({ dataset: { id: w.id } }); else A.finWork({ dataset: { id: w.id } });
+    }
+    else if (id === 'para') A.finParaMine();
+    else if (id === 'authors') { finMinePools(); start((TASK_ITEMS['fin:nmine'] || []).length ? 'fin:nmine' : 'fin:n'); }
+    else if (id === 'words') start('fin:v');
+    else if (id === 'mybooks') { finMinePools(); start((TASK_ITEMS['fin:mine'] || []).length ? 'fin:mine' : 'fin:all'); }
+    else if (id === 'full') { finRemember('write'); go({ v: 'final', sub: 'write', part: 'full' }); }
+    else if (id === 'review') { finRemember('works'); go({ v: 'final', sub: 'works' }); }
+    else if (id === 'ru') startMix();
+    else if (id === 'soc' || id === 'en') A.quick({ dataset: { k: id } });
+    else if (id === 'mock') startMock();
+    else if (id === 'ess27') A.continue({ dataset: { p: '2' } });
+    else if (id === 'err') startMarathon();
+  },
+  planTick: b => {
+    const id = b.dataset.s, s = planToday().steps.find(x => x.id === id); if (!s) return;
+    if (s.auto) { toast('Это отметилось само - по сделанным заданиям'); return; }
+    const d = day(), m = d.m = d.m || {}; if (m[id]) delete m[id]; else m[id] = 1;
+    save(); render(); toast(m[id] ? 'Отмечено: сделано' : 'Отметка снята');
+  },
+});
 
 /* ================= старт ================= */
 resumeFromState(true); // незаконченная тренировка или пробник: свежая - открыть на том же месте, давняя - карточкой на главной

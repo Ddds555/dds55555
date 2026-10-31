@@ -84,25 +84,76 @@ const finNameP = w => `«${w.title}»${w.authorShort ? ` (${w.authorShort})` : '
       put('k', { id: `fin-k-${w.id}-${i + 1}`, type: 'card', q: `${finNameP(w)}. Аргумент «${a.title}»: вспомни эпизод и что он доказывает - потом проверь себя.`, a: a.ep, why: a.proves ? `**Что доказывает:** ${a.proves}` : '', work: w.id });
     });
   }
+  /* авторы полностью (tools/content/authors.js): выбрать точное имя и отчество среди похожих - fin-n-<произведение>,
+     и карточка «назови полностью» на каждого автора - fin-nc-<первое его произведение> */
+  FIN_KIND.n = 'авторы полностью';
+  const nameOf = s => { const m = String(s).match(/^(\S+) (\S+вич) (\S+)$/); return m ? { i: m[1], o: m[2], f: m[3] } : null; };
+  const NAME_OF = Object.fromEntries(Object.entries(PATRON).map(([n, o]) => [o, n])), named = FIN_W.map(w => nameOf(w.author)).filter(Boolean);
+  const traps = full => { // сначала частые путаницы, потом имя и отчество местами, потом имена и отчества других писателей
+    const p = nameOf(full); if (!p) return [];
+    const out = [...(AUTHOR_TRAPS[full] || [])];
+    if (NAME_OF[p.o] && PATRON[p.i] && NAME_OF[p.o] !== p.i) out.push(`${NAME_OF[p.o]} ${PATRON[p.i]} ${p.f}`);
+    for (const x of named) if (x.f !== p.f && x.i === p.i && x.o !== p.o) out.push(`${p.i} ${x.o} ${p.f}`);
+    for (const x of named) if (x.f !== p.f && x.o === p.o && x.i !== p.i) out.push(`${x.i} ${p.o} ${p.f}`);
+    for (const o of ['Сергеевич', 'Николаевич', 'Михайлович', 'Александрович', 'Иванович', 'Петрович']) if (o !== p.o) out.push(`${p.i} ${o} ${p.f}`);
+    return uniq(out).filter(x => x !== full);
+  };
+  const tip = a => AUTHOR_TIPS[a] ? ' ' + AUTHOR_TIPS[a] : '', byAuthor = {};
+  for (const w of FIN_W) {
+    if (!w.author) continue;
+    (byAuthor[w.author] = byAuthor[w.author] || []).push(w);
+    const X = AUTHOR_OPTS[w.author], right = X ? X.a : w.author, wrong = X ? X.o : traps(w.author).slice(0, 3);
+    if (wrong.length < 3) continue;
+    const id = 'fin-n-' + w.id, o = pickN([right, ...wrong], 4, rng(hashStr(id)));
+    put('n', { id, type: 'choice', q: X?.q ? X.q(w.title) : `«${w.title}»: кто автор? Выбери точно - имя, отчество и фамилию.`, o, a: o.indexOf(right), ex: `${finNameP(w)} - **${w.author}**.${tip(w.author)}`, work: w.id });
+  }
+  for (const [a, ws] of Object.entries(byAuthor)) {
+    const list = ws.map(w => `«${w.title}»`).join(', '), short = ws[0].authorShort;
+    put('n', { id: 'fin-nc-' + ws[0].id, type: 'card', q: `${list} - кто автор? Назови полностью${nameOf(a) ? ': имя, отчество и фамилию' : ''}.`, a, why: [AUTHOR_TIPS[a] || '', short && short !== a ? `На сочинении можно и с инициалами: **${short}**.` : ''].filter(Boolean).join('\n'), work: ws[0].id, works: ws.map(w => w.id) });
+  }
   /* тест по произведению: автор, жанр, кто есть кто, аргументы и вопросы FINAL_QUIZ про эту книгу.
      «Чей герой», «чья цитата» и «что подходит к теме» сюда не берём: в тесте по одной книге ответ на них очевиден */
   const st = t => { const s = t.toLowerCase().replace(/ё/g, 'е'), f = s.split(/\s+/)[0]; return f.length > 5 ? f.slice(0, -2) : s.slice(0, 6); };
   const guess = it => { const q = String(it?.q || '').toLowerCase().replace(/ё/g, 'е'); return FIN_W.filter(w => q.includes('«' + st(w.title))).map(w => w.id); };
   const pools = {}, add = (wid, id) => { if (!finWork(wid) || !ITEMS[id]) return; const p = pools[wid] = pools[wid] || []; if (!p.includes(id)) p.push(id); };
-  for (const k of ['a', 'g', 'r', 'k']) for (const id of TASK_ITEMS['fin:' + k] || []) add(ITEMS[id].work, id);
+  for (const k of ['a', 'g', 'r', 'k', 'n']) for (const id of TASK_ITEMS['fin:' + k] || []) for (const wid of ITEMS[id].works || [ITEMS[id].work]) add(wid, id);
   for (const id of TASK_ITEMS['fin:q'] || []) for (const wid of FQ_WORKS[id] || ITEMS[id].works || guess(ITEMS[id])) add(wid, id);
   for (const w of FIN_W) TASK_ITEMS['finw:' + w.id] = pools[w.id] || [];
 }
 
 /* ---- прочитала -> закрепила ---- */
 const finReadOf = id => state.readW?.[id] || null;
+const finReadWorks = () => FIN_W.filter(w => finReadOf(w.id));
 const finDone = w => { const m = mastery('finw:' + w.id); return m.total > 0 && m.pct >= 0.8; };
 const finQuizN = w => { const n = (TASK_ITEMS['finw:' + w.id] || []).length; return n <= 20 ? n : 15; };
-/* что читать дальше: избранное, которое ещё не закреплено, потом непрочитанное по порядку, потом самое слабое */
+/* к скольким темам есть аргументы из прочитанного и сколько новых тем закроет книга */
+const finCovered = () => { const read = new Set(finReadWorks().map(w => w.id)); return new Set(FIN_T.filter(t => (t.works || []).some(id => read.has(id))).map(t => t.id)); };
+const finGain = (w, cov = finCovered()) => FIN_T.filter(t => !cov.has(t.id) && (t.works || []).includes(w.id)).length;
+const finShort = w => /рассказ|повесть|стихотворение|сказка/.test(w.genre || '');
+/* что дальше: избранное, которое ещё не закреплено; прочитанное, но не закреплённое (тест ниже 80%);
+   потом новая книга, которая закроет больше всего новых тем (сначала короткие); потом самое слабое */
 function finNextWork() {
-  const open = w => !(finReadOf(w.id) && finDone(w));
-  return favWorks().map(finWork).filter(Boolean).find(open) || FIN_W.find(w => !finReadOf(w.id)) || [...FIN_W].filter(open).sort((a, b) => mastery('finw:' + a.id).pct - mastery('finw:' + b.id).pct)[0] || null;
+  const open = w => !(finReadOf(w.id) && finDone(w)), weak = (a, b) => mastery('finw:' + a.id).pct - mastery('finw:' + b.id).pct;
+  const fav = favWorks().map(finWork).filter(Boolean).find(open); if (fav) return fav;
+  const fix = finReadWorks().filter(w => !finDone(w)).sort(weak)[0]; if (fix) return fix;
+  const cov = finCovered(), next = FIN_W.filter(w => !finReadOf(w.id)).map(w => ({ w, g: finGain(w, cov) }))
+    .sort((a, b) => (b.g > 0) - (a.g > 0) || finShort(b.w) - finShort(a.w) || b.g - a.g)[0];
+  return next?.w || [...FIN_W].filter(open).sort(weak)[0] || null;
 }
+/* её прочитанное (31.10.2026 она написала, какие книги прочитала) - отмечаю один раз, дальше отметки только её */
+if (!state.readSeed) {
+  state.readW = state.readW || {};
+  for (const [id, d] of [['prest', '2026-10-29'], ['yushka', '2026-10-29'], ['doktor', '2026-10-29'], ['knopka', '2026-10-31'], ['siren', '2026-10-31'], ['kapdoch', '2026-10-31']]) if (finWork(id) && !state.readW[id]) state.readW[id] = d;
+  state.readSeed = today(); save();
+}
+/* «мои книги»: тест вперемешку по прочитанным и авторы прочитанных - пересчитываются перед каждым показом */
+Object.assign(FIN_KIND, { mine: 'мои книги', nmine: 'авторы моих книг' });
+function finMinePools() {
+  const read = finReadWorks().map(w => w.id), mine = id => { const it = ITEMS[id]; return (it.works || [it.work]).some(w => read.includes(w)); };
+  TASK_ITEMS['fin:mine'] = [...new Set(read.flatMap(id => TASK_ITEMS['finw:' + id] || []))];
+  TASK_ITEMS['fin:nmine'] = (TASK_ITEMS['fin:n'] || []).filter(mine);
+}
+finMinePools();
 function finReadBtn(w) {
   const rd = finReadOf(w.id);
   return `<button class="btn sm ${rd ? 'gold' : 'ghost'}" data-a="finRead" data-id="${esc(w.id)}" aria-pressed="${!!rd}">${ic('check', 16)} ${rd ? `Прочитано ${fmtD(rd)}` : 'Прочитала'}</button>`;
@@ -159,11 +210,20 @@ function finMoreHTML(w) {
 }
 finQuizHTML = function () {
   const ids = TASK_ITEMS['fin:all'] || []; if (!ids.length) return finSoon('Тренировка');
-  const m = mastery('fin:all'), errs = ids.filter(id => state.errors[id] && !state.errors[id].learned).length;
-  const kinds = Object.keys(FIN_KIND).filter(k => (TASK_ITEMS['fin:' + k] || []).length);
+  finMinePools();
+  const m = mastery('fin:all'), errs = ids.filter(id => state.errors[id] && !state.errors[id].learned).length, read = finReadWorks();
+  const kinds = Object.keys(FIN_KIND).filter(k => k !== 'mine' && k !== 'nmine' && (TASK_ITEMS['fin:' + k] || []).length);
+  const mineM = mastery('fin:mine'), nM = mastery('fin:nmine');
   const row = w => { const mw = mastery('finw:' + w.id), done = finDone(w); return `<button class="wq" data-a="finWorkQuiz" data-id="${esc(w.id)}"><span style="min-width:0"><b>«${esc(w.title)}»</b> <span class="muted small">${esc(w.authorShort || '')}</span>${finReadOf(w.id) ? ' <span class="okmark">прочитано</span>' : ''}<span class="bar ${done ? '' : 'violet'}" style="height:6px;margin-top:6px;display:block"><i style="width:${mw.pct * 100}%"></i></span></span><span class="wqs num" style="${done ? 'color:var(--good)' : ''}">${mw.ok}/${mw.total}</span></button>`; };
-  return `<section class="card">
-    <div class="row sb"><span class="kicker">Твой прогресс</span><span class="num muted small">${Math.round(m.pct * 100)}%</span></div>
+  return `<section class="card" style="border-left:5px solid var(--rose)">
+    <div class="row sb"><h2 class="h2">Мои книги</h2><span class="kicker">прочитано ${read.length}</span></div>
+    <p class="muted small" style="margin:0">${read.length ? read.map(w => `«${esc(w.title)}»`).join(', ') + '. Тесты только по ним - чтобы закрепить прочитанное.' : 'Отмечай книги «Прочитала» в их карточках - здесь появятся тесты только по ним.'}</p>
+    ${read.length ? `<button class="btn primary block" data-a="startKey" data-k="fin:mine" data-n="10">${ic('play', 18)} Мои книги вперемешку <span class="num" style="opacity:.8">${mineM.ok}/${mineM.total}</span></button>
+    <button class="btn block" data-a="startKey" data-k="fin:nmine" data-n="10">${ic('pen', 18)} Авторы моих книг <span class="num muted">${nM.ok}/${nM.total}</span></button>` : ''}
+    <button class="btn sm ghost" data-a="startKey" data-k="fin:n" data-n="10">Все авторы полностью: ${(TASK_ITEMS['fin:n'] || []).length}</button>
+  </section>
+  <section class="card">
+    <div class="row sb"><span class="kicker">Все книги вперемешку</span><span class="num muted small">${Math.round(m.pct * 100)}%</span></div>
     <div class="big">${m.ok}<span>/${m.total}</span></div><div class="bar"><i style="width:${m.pct * 100}%"></i></div>
     <p class="muted small" style="margin:0">Всё вперемешку: кто автор (полностью - имя, отчество, фамилия), чей герой и кто есть кто, жанр, цитаты, аргументы (вспомни эпизод и вывод), что подходит к теме. В красной тетради: ${errs}.</p>
     <button class="btn primary block" data-a="startKey" data-k="fin:all" data-n="10">${ic('play', 18)} 10 заданий</button>
@@ -172,19 +232,8 @@ finQuizHTML = function () {
   </section>
   <section class="card"><div class="row sb"><h2 class="h2">По одному произведению</h2><span class="kicker">${FIN_W.filter(finDone).length} из ${FIN_W.length} сдано</span></div>
     <p class="muted small" style="margin:0">Прочитала карточку - сразу закрепи. Зелёный - тест сдан на 80% и больше.</p>
-    <div>${FIN_W.map(row).join('')}</div></section>`;
+    <div>${[...FIN_W].sort((a, b) => !!finReadOf(b.id) - !!finReadOf(a.id)).map(row).join('')}</div></section>`;
 };
-/* карточка итогового сочинения на главной */
-function finHomeCard() {
-  if (!FIN_W.length) return '';
-  const fd = daysTo(ESSAY_DATE), N = FIN_W.length, rd = FIN_W.filter(w => finReadOf(w.id)).length, done = FIN_W.filter(finDone).length, nx = finNextWork();
-  return `<section class="card" style="border-left:5px solid var(--rose)">
-    <div class="row sb"><h2 class="h2">Итоговое сочинение</h2><span class="kicker">${fd >= 0 ? `${fmtD(ESSAY_DATE)} · через ${fd} ${plural(fd, 'день', 'дня', 'дней')}` : 'допуск к ЕГЭ'}</span></div>
-    <div class="blk"><div class="row sb small"><span>Прочитано произведений</span><span class="num">${rd} из ${N}</span></div><div class="bar"><i style="width:${rd / N * 100}%"></i></div></div>
-    <div class="blk"><div class="row sb small"><span>Тест по книге сдан</span><span class="num">${done} из ${N}</span></div><div class="bar violet"><i style="width:${done / N * 100}%"></i></div></div>
-    <div class="row">${nx ? `<button class="btn primary" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} «${esc(nx.title)}»</button>` : ''}${rd ? `<button class="btn violet" data-a="finParaMine">${ic('pen', 18)} Аргумент к теме</button>` : ''}<button class="btn" data-a="tab" data-t="final">Все разделы</button></div>
-  </section>`;
-}
 
 /* ---- вкладка «Слова»: слова к темам, готовые фразы, как писать без воды, тренажёр синонимов ---- */
 function finWordsHTML() {
@@ -204,7 +253,6 @@ function finWordsHTML() {
 }
 
 /* ---- абзац-аргумент по своим книгам: тема подбирается к прочитанным произведениям, после - сверка с образцом ---- */
-const finReadWorks = () => FIN_W.filter(w => finReadOf(w.id));
 finParaPick = function (prev) {
   const read = new Set(finReadWorks().map(w => w.id));
   const mine = FIN_T.filter(t => t.id !== prev && (t.works || []).some(id => read.has(id)));
@@ -310,7 +358,7 @@ async function copyForClaude(t) {
   catch { openSheet(`<h2 class="h2">Скопируй и отправь Claude</h2><textarea class="codebox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`); }
 }
 function reportsText() {
-  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 70» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
+  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 100» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
     const it = getItem(r.id);
     return `${i + 1}. [${r.id}] ${it ? `${itemLabel(it)} - ${questionText(it)}` : 'задание не найдено'}${it && it.o && it.type !== 'stress' ? `\n   Варианты: ${it.o.join(' | ')}` : ''}\n   Мой ответ: ${r.my || '-'} · ответ программы: ${it ? correctText(it) : '-'} · ${r.d || ''}${r.after ? ` · повторно: не согласна с ответом от ${r.after}` : ''}`;
   }).join('\n');
@@ -376,7 +424,7 @@ function vData() {
   <section class="card"><h2 class="h2">Как поставить на телефон</h2>
     <p style="margin:0"><b>iPhone:</b> открой ссылку в Safari → «Поделиться» → «На экран «Домой»».</p>
     <p style="margin:0"><b>Android:</b> открой ссылку в Chrome → меню ⋮ → «Установить приложение» или «Добавить на главный экран».</p>
-    <p class="muted small" style="margin:0">Дальше открывай значком «ЕГЭ на 70» - и без интернета тоже.${B.version ? ` Версия ${esc(B.version)}` : ''}${B.content ? `, материалы от ${esc(fmtD(B.content))}` : ''}.</p></section>`;
+    <p class="muted small" style="margin:0">Дальше открывай значком «ЕГЭ на 100» - и без интернета тоже.${B.version ? ` Версия ${esc(B.version)}` : ''}${B.content ? `, материалы от ${esc(fmtD(B.content))}` : ''}.</p></section>`;
 }
 Object.assign(A, {
   openData: () => { closeSheet(); go({ v: 'data' }); },
@@ -404,14 +452,14 @@ Object.assign(A, {
   finRead: b => {
     const id = b.dataset.id; if (!finWork(id)) return; state.readW = state.readW || {};
     const on = !state.readW[id]; if (on) state.readW[id] = today(); else delete state.readW[id];
-    save(); render(); toast(on ? 'Прочитано! Теперь закрепи - тест по этой книге' : 'Сняла отметку «прочитано»');
+    finMinePools(); save(); render(); toast(on ? 'Прочитано! Теперь закрепи - тест по этой книге' : 'Сняла отметку «прочитано»');
   },
   finWorkQuiz: b => {
     const w = finWork(b.dataset.id); if (!w) return;
     const key = 'finw:' + w.id; startPool(`«${w.title}»`, TASK_ITEMS[key] || [], finQuizN(w), { key });
   },
   exportFile: async () => {
-    const name = `ege70-progress-${today()}.json`, file = new File([backupJSON()], name, { type: 'application/json' });
+    const name = `ege100-progress-${today()}.json`, file = new File([backupJSON()], name, { type: 'application/json' });
     const done = () => { state.backupAt = today(); save(); if (ui.route.v === 'data') render(); };
     if (isIOS() && navigator.canShare?.({ files: [file] })) {
       try { await navigator.share({ files: [file], title: 'Копия прогресса ЕГЭ' }); done(); toast('Копия сохранена'); }
