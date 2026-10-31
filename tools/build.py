@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Собирает офлайн-приложение «ЕГЭ на 70» из HTML артефакта в Claude.
+"""Собирает офлайн-приложение «ЕГЭ на 100» из HTML артефакта «ЕГЭ на 70» в Claude.
 
     python3 tools/build.py
 
@@ -12,7 +12,7 @@
 
 Код и материалы артефакта не переписываются: сборщик точечно меняет несколько мест (PATCHES - каждое
 должно найтись ровно один раз, иначе сборка останавливается) и вставляет перед «старт» новые материалы
-из tools/content (CONTENT) и tools/offline.js.
+из tools/content (CONTENT), tools/offline.js и tools/plan.js (план дня и главный экран).
 """
 import base64
 import hashlib
@@ -36,7 +36,9 @@ FONTS = [  # (файл в docs/fonts, семейство, насыщенност
 ]
 ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
 # материалы офлайн-версии к итоговому сочинению: подробные пересказы, новые произведения, слова и связки
-CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js']
+CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js', 'authors.js']
+# название приложения (31.10.2026 она попросила «ЕГЭ на 100»: «на сотку»); в артефакте - «ЕГЭ на 70»
+APP_TITLE = 'ЕГЭ на 100'
 
 BACK = '<button class="back" data-a="back">${ic(\'left\', 18)} Назад</button>'
 
@@ -54,21 +56,6 @@ PATCHES = [
     ('жалоба «Здесь ошибка?» без Claude: где её потом смотреть',
      "s.textContent = caps.sample ? 'Записала. Проверяю задание…' : 'Записала: проверю это задание';",
      "s.textContent = caps.sample ? 'Записала. Проверяю задание…' : 'Жалоба записана - она во вкладке «Ошибки» → «Жалобы»';"),
-    ('главная: где хранится прогресс',
-     "'сохраняется на этом устройстве'",
-     "'офлайн-версия, всё хранится на этом устройстве'"),
-    ('главная: ссылка на копию прогресса',
-     '<div class="muted small">${sync}</div></header>',
-     '<div class="muted small">${sync} · ${dataLinkHTML()}</div></header>'),
-    ('главная: карточка итогового сочинения',
-     '${resumeCard()}',
-     '${resumeCard()}\n  ${finHomeCard()}'),
-    ('главная: копилка открывает подарки',
-     'data-a="tab" data-t="gifts" style="cursor:pointer"',
-     'data-a="openGifts" style="cursor:pointer"'),
-    ('главная: срок итогового сочинения уже в его карточке - отдельная плашка не нужна',
-     '<div class="chips">${essayD >= 0 ? `<button class="chip" data-a="openFinal"',
-     '<div class="chips">${essayD >= 0 && !FIN_W.length ? `<button class="chip" data-a="openFinal"'),
     ('итоговое сочинение: на вкладке «Назад» не нужен',
      BACK + '\n  <header class="stack" style="gap:6px"><div class="kicker">${fd >= 0',
      '${ui.stack.length ? `' + BACK + '` : \'\'}\n  <header class="stack" style="gap:6px"><div class="kicker">${fd >= 0'),
@@ -78,6 +65,15 @@ PATCHES = [
     ('итоговое сочинение: экран вкладки «Слова»',
      "  else if (sub === 'quiz') body = finQuizHTML();",
      "  else if (sub === 'quiz') body = finQuizHTML();\n  else if (sub === 'words') body = finWordsHTML();"),
+    ('пробник: уровни 90 и 100',
+     "${p >= 25 ? 'Уровень 80 баллов!' : p >= 22 ? 'Уровень 70 баллов есть!' : 'Хорошая точка отсчёта'}",
+     "${p >= 28 ? 'Тест без единой ошибки - путь к 100!' : p >= 27 ? 'Уровень 90+!' : p >= 25 ? 'Уровень 80 баллов!' : p >= 22 ? 'Уровень 70 баллов есть!' : 'Хорошая точка отсчёта'}"),
+    ('пробник: сколько нужно на 90 и 100',
+     'Для 70 нужно около 38 первичных из 50, для 80 - около 43. Шкала 2026 года, примерно.',
+     'Для 70 нужно около 38 первичных из 50, для 80 - около 43, для 90 - около 47, для 100 - все 50. Шкала 2026 года, примерно.'),
+    ('сочинение ЕГЭ: сколько нужно на 90 и 100',
+     'Для 70 баллов нужно примерно 16 из 22.',
+     'Для 70 баллов нужно примерно 16 из 22, для 90 - около 20, для 100 - все 22.'),
     ('состояние: отметки «прочитано»',
      'favW: {}, finPara: null, mixSeen: {},',
      'favW: {}, readW: {}, finPara: null, mixSeen: {},'),
@@ -226,7 +222,8 @@ def page(base, title, css, markup, js, build, single):
 def main():
     html = SRC.read_text(encoding='utf-8')
     meta = json.loads(META.read_text(encoding='utf-8'))
-    base, title, css, markup, js = split_source(html)
+    base, _, css, markup, js = split_source(html)
+    title = APP_TITLE
     if re.search(r'fonts\.googleapis|fonts\.gstatic', css + markup + js):
         fail('в стиле или скрипте осталась ссылка на Google Fonts')
 
@@ -236,8 +233,9 @@ def main():
     checks = {k: v for k, v in json.loads((TOOLS / 'report-checks.json').read_text(encoding='utf-8')).items() if not k.startswith('_')}
     content = ''.join((TOOLS / 'content' / n).read_text(encoding='utf-8').rstrip() + '\n\n' for n in CONTENT)
     offline = (content + 'const REPORT_CHECKS = ' + json.dumps(checks, ensure_ascii=False) + ';\n'
-               + (TOOLS / 'offline.js').read_text(encoding='utf-8'))
-    js = patch(js, START, offline.rstrip() + '\n\n' + START, 'вставка tools/offline.js перед «старт»')
+               + (TOOLS / 'offline.js').read_text(encoding='utf-8').rstrip() + '\n\n'
+               + (TOOLS / 'plan.js').read_text(encoding='utf-8'))
+    js = patch(js, START, offline.rstrip() + '\n\n' + START, 'вставка tools/offline.js и tools/plan.js перед «старт»')
     css = css.rstrip() + '\n' + (TOOLS / 'offline.css').read_text(encoding='utf-8')
 
     for name in [f'fonts/{n}.woff2' for n, _, _ in FONTS] + [f'icons/{n}' for n in ICONS]:
