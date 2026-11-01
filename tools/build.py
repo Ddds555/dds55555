@@ -35,8 +35,8 @@ FONTS = [  # (файл в docs/fonts, семейство, насыщенност
     ('unbounded-latin-ext', 'Unbounded', '200 900'), ('unbounded-latin', 'Unbounded', '200 900'),
 ]
 ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
-# материалы офлайн-версии к итоговому сочинению: подробные пересказы, новые произведения, слова и связки
-CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js', 'authors.js']
+# материалы офлайн-версии: подробные пересказы, новые произведения, слова и связки, авторы, русский (ФИПИ-2026, тексты, задания)
+CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js', 'authors.js', 'ru-extra.js']
 # название приложения (31.10.2026 она попросила «ЕГЭ на 100»: «на сотку»); в артефакте - «ЕГЭ на 70»
 APP_TITLE = 'ЕГЭ на 100'
 
