@@ -621,6 +621,16 @@ for (const it of RU_PRACTICE_ADD) if (it.task === 7 && !(TASK_ITEMS['ruE:7'] || 
   th(25, { h: `Навигатор ФИПИ: фразеологизмы (${NAV_PHRASEO.length})`, p: 'Фразеологизм - устойчивое сочетание, смысл которого не складывается из смысла слов (кот наплакал = очень мало). Эти фразеологизмы могут встретиться в задании 25; в скобках - варианты.\n' + byLetter(NAV_PHRASEO) });
 }
 
+/* ---- обществознание и английский: новые темы и задания (tools/content/soc-extra.js; её просьба 01.11.2026 -
+   «английский, общество - тоже не забывать»: в плане у них по два вечера в неделю: вопросы без повторов уже имеющихся) ---- */
+for (const [tid, add] of Object.entries(SOC_ADD)) {
+  const t = SOC_TOPICS.find(x => x.id === tid); if (!t) continue;
+  t.theory = [...(t.theory || []), ...add.theory];
+  for (const it of add.items) if (!ITEMS[it.id]) addItem('soc:' + tid, { exc: false, ...it, subj: 'soc', task: tid });
+}
+{ const pos = id => { const i = SOC_ORDER_IDS.indexOf(id); return i < 0 ? SOC_ORDER_IDS.length : i; }; SOC_TOPICS.sort((a, b) => pos(a.id) - pos(b.id)); }
+for (const [sec, items] of Object.entries(EN_ADD)) for (const it of items) if (!ITEMS[it.id]) addItem('en:' + sec, { exc: false, ...it, subj: 'en', task: sec });
+
 /* ---- значок «ЕГЭ на 100» на iPhone (её просьба 01.11.2026: «хочу, чтобы сама иконка была 100»).
    iPhone запоминает значок при установке, а у каждого установленного значка своё хранилище.
    Поэтому: поставить новый значок из Safari, в старом нажать «Скопировать прогресс», в новом - «Вставить прогресс» ---- */
