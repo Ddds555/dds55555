@@ -7,21 +7,21 @@
 
 const PLAN_PHASES = [
   { id: 'p1', from: '2026-09-01', to: '2026-12-02', when: 'до 2 декабря', name: 'Итоговое сочинение и старт русского', tag: 'сочинение + русский',
-    focus: 'Главное сейчас - зачёт по итоговому сочинению 2 декабря. Каждый день понемногу русский, чтобы ЕГЭ тоже двигался. Обществознание и английский подключаем после 2 декабря - сейчас не распыляемся.',
-    days: { 1: ['book', 'ru', 'err'], 2: ['para', 'ru', 'err'], 3: ['authors', 'ru', 'err'], 4: ['para', 'ru', 'err'], 5: ['book', 'ru', 'err'], 6: ['full', 'err'], 0: ['mybooks', 'words', 'err'] } },
+    focus: 'Главное сейчас - зачёт по итоговому сочинению 2 декабря. В будни ещё одна тема русского: сначала теория, потом закрепление - так ЕГЭ тоже двигается. Обществознание и английский подключаем после 2 декабря - сейчас не распыляемся.',
+    days: { 1: ['book', 'ru', 'err'], 2: ['para', 'ru', 'err'], 3: ['authors', 'ru', 'err'], 4: ['para', 'ru', 'err'], 5: ['book', 'ru', 'err'], 6: ['full', 'err'], 0: ['mybooks', 'words', 'rurev', 'err'] } },
   { id: 'p2', from: '2026-12-03', to: '2027-01-31', when: '3 декабря - январь', name: 'Русский: орфография и пунктуация', tag: 'русский + общество и английский',
-    focus: 'Русский каждый день: «Продолжить» сама даёт задания 9-20 и слабые места. Через день - обществознание и английский. В субботу по очереди - пробник тестовой части и сочинение ЕГЭ.',
-    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'soc', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['sat', 'err'], 0: ['err'] } },
+    focus: 'Русский каждый день - следующая тема: теория, потом закрепление; в среду - повторение пройденного. Обществознание и английский через день. В субботу по очереди - пробник тестовой части и сочинение ЕГЭ.',
+    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'rurev', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['sat', 'err'], 0: ['err'] } },
   { id: 'p3', from: '2027-02-01', to: '2027-03-31', when: 'февраль - март', name: 'Сочинение ЕГЭ и пробники', tag: 'сочинение ЕГЭ + пробники',
-    focus: 'Сочинение ЕГЭ (задание 27) и пробник - по очереди каждую субботу. Обществознание - все темы, английский - чтение и письмо.',
-    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'soc', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['sat', 'err'], 0: ['err'] } },
+    focus: 'Сочинение ЕГЭ (задание 27) и пробник - по очереди каждую субботу. Русский: последние темы, потом задания вперемешку, как на экзамене. Обществознание - все темы, английский - чтение и письмо.',
+    days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'rurev', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['sat', 'err'], 0: ['err'] } },
   { id: 'p4', from: '2027-04-01', to: '2027-07-31', when: 'апрель - экзамен', name: 'Пробники и повторение', tag: 'пробники + повторение',
     focus: 'Пробник каждую субботу, марафон всей красной тетради. Новых тем не берём - доводим до идеала то, что знаешь.',
     days: { 1: ['ru', 'soc', 'err'], 2: ['ru', 'en', 'err'], 3: ['ru', 'soc', 'err'], 4: ['ru', 'en', 'err'], 5: ['ru', 'soc', 'err'], 6: ['mock', 'err'], 0: ['err'] } },
 ];
 const PLAN_SPECIAL = { '2026-12-01': ['review', 'err'], '2026-12-02': ['exam'] };
 const PLAN_NAMES = { book: 'книга дня', para: 'аргумент к теме', authors: 'авторы', words: 'слова', mybooks: 'мои книги', full: 'сочинение целиком', review: 'повторить книги', exam: 'итоговое сочинение',
-  ru: 'русский 15', soc: 'общество 10', en: 'английский 10', mock: 'пробник', ess27: 'сочинение ЕГЭ', sat: 'пробник или сочинение ЕГЭ', err: 'ошибки' };
+  ru: 'русский: тема дня', rurev: 'повторение пройденного', soc: 'общество 10', en: 'английский 10', mock: 'пробник', ess27: 'сочинение ЕГЭ', sat: 'пробник или сочинение ЕГЭ', err: 'ошибки' };
 /* письменный шаг засчитан, когда сегодня в поле написано не меньше need слов и из них новых - не меньше gain */
 const PLAN_WRITE = { fpText: ['para', 50, 40], fText: ['full', 250, 200], esText: ['ess27', 150, 120] };
 
@@ -50,7 +50,15 @@ function planStep(id, k, d) {
     full: () => ({ area: 'Сочинение', min: 70, go: 'Написать', title: 'Сочинение целиком', sub: 'Как на экзамене: тема, 350+ слов, потом самопроверка по галочкам. Писала на бумаге - отметь кружок слева.', done: !!w.full }),
     review: () => ({ area: 'Сочинение', min: 30, go: 'Мои книги', title: 'Завтра итоговое сочинение', sub: 'Перечитай «Кратко» и аргументы своих книг и план «Как писать». Новое сегодня не учи. Выспись!', done: false }),
     exam: () => ({ area: 'Сочинение', min: 0, go: null, title: 'Сегодня итоговое сочинение', sub: 'Паспорт, чёрная гелевая ручка, вода. Вступление - два аргумента - вывод, от 350 слов. Ты готовилась - всё получится!', done: false }),
-    ru: () => ({ area: 'Русский ЕГЭ', min: 15, go: 'Начать', title: `${N} заданий`, sub: 'Задания 1-26 вперемешку: программа сама даёт то, что сейчас важнее всего.', count: [Math.min(t.ru || 0, N), N], done: (t.ru || 0) >= N }),
+    ru: () => {
+      const n = d.pk?.ru || ruTopic();
+      if (!n) return { area: 'Русский ЕГЭ', min: 15, go: 'Начать', title: `${N} заданий вперемешку`, sub: 'Все темы пройдены: теперь задания 1-26 вперемешку, как на экзамене.', count: [Math.min(t.ru || 0, N), N], done: (t.ru || 0) >= N };
+      const T = ruTask(n), th = ruP(n).th, got = t['ru:' + n] || 0;
+      return { area: `Русский ЕГЭ · задание ${n}`, min: th ? 15 : 20, go: th ? 'Закрепить' : 'Теория', title: T.title, topic: n,
+        sub: th ? `Закрепление: 10 заданий только по этой теме.${th !== k ? ` Теорию ты прочитала ${fmtD(th)} - можно освежить на экране задания.` : ''}` : 'Новая тема: сначала теория (5 минут), потом 10 заданий только по ней.',
+        count: th ? [Math.min(got, 10), 10] : null, done: !!th && got >= 10 };
+    },
+    rurev: () => { const pool = ruReviewPool(); return pool.length ? { area: 'Русский ЕГЭ', min: 10, go: 'Начать', title: 'Повторение пройденного', sub: `10 заданий из тем, которые ты уже прошла (${ruPassedList().length}).`, done: (t['s:rev:ru'] || 0) >= 10 } : null; },
     soc: () => ({ area: 'Обществознание', min: 15, go: 'Начать', title: '10 заданий', sub: 'Темы вперемешку, ошибки уйдут в красную тетрадь.', count: [Math.min(t.soc || 0, 10), 10], done: (t.soc || 0) >= 10 }),
     en: () => ({ area: 'Английский', min: 15, go: 'Начать', title: '10 заданий', sub: 'Грамматика, словообразование, лексика.', count: [Math.min(t.en || 0, 10), 10], done: (t.en || 0) >= 10 }),
     mock: () => ({ area: 'Русский ЕГЭ', min: 60, go: 'Начать', title: 'Пробник тестовой части', sub: '26 заданий по порядку, как на экзамене, - и баллы по шкале ЕГЭ.', done: state.mocks.some(x => x.d === k) }),
@@ -81,6 +89,7 @@ record = function (it, ok, my) {
   const d = day(), t = d.t = d.t || {}, inc = x => { t[x] = (t[x] || 0) + 1; };
   if (it?.subj) inc(it.subj);
   if (it?.subj === 'fin' && it.task) inc('fin:' + it.task);
+  if (it?.subj === 'ru' && it.task) inc('ru:' + it.task);
   if (ses?.key) inc('s:' + ses.key);
   return record0(it, ok, my);
 };
@@ -115,7 +124,7 @@ function planStepHTML(s, i, cur) {
   return `<div class="pstep ${s.done ? 'done' : ''}">
     <button class="pchk" data-a="planTick" data-s="${s.id}" aria-pressed="${s.done}" aria-label="${s.done ? 'Сделано' : 'Отметить сделанным'}">${s.done ? ic('check', 20) : i + 1}</button>
     <div class="pbody"><div class="parea">${esc(s.area)}${s.min ? ` · ${s.min} мин` : ''}</div><div class="pttl">${esc(s.title)}</div>
-      ${s.done ? '' : `${s.sub ? `<div class="psub">${esc(s.sub)}</div>` : ''}${s.count && s.count[0] ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${s.count[0] / s.count[1] * 100}%"></i></div>` : ''}${planGoBtn(s, cur)}`}
+      ${s.done ? '' : `${s.sub ? `<div class="psub">${esc(s.sub)}</div>` : ''}${s.count && s.count[0] ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${s.count[0] / s.count[1] * 100}%"></i></div>` : ''}<div class="row" style="gap:8px">${planGoBtn(s, cur)}${s.topic && !ruP(s.topic).th ? `<button class="btn sm ghost pgo" data-a="ruSkip" data-n="${s.topic}">Уже знаю</button>` : ''}</div>`}
     </div></div>`;
 }
 function planCardHTML(P) {
@@ -145,7 +154,7 @@ function progressHTML(ph) {
   const row = (a, icon, cls, title, meta, val, style = '') => `<button class="prow" ${a}><span class="tnum ${cls}" style="${style}">${ic(icon, 22)}</span><span style="min-width:0"><span class="ttl">${title}</span><br><span class="tmeta">${meta}</span></span><span class="pts num">${val}</span></button>`;
   return `<section class="card"><h2 class="h2">Мой прогресс</h2><div>
     ${ph.id === 'p1' ? row('data-a="tab" data-t="final"', 'pen', '', 'Итоговое сочинение', `прочитано ${read.length}, закреплено ${fixed} · аргументы к ${cov} из ${FIN_T.length} тем`, pct(FIN_T.length ? cov / FIN_T.length : 0)) : ''}
-    ${row('data-a="tab" data-t="ru"', 'book', 'theory', 'Русский ЕГЭ', `задания 1-26${best ? ` · лучший пробник ${best} из 28` : ' · пробник ещё впереди'}`, pct(ru))}
+    ${row('data-a="tab" data-t="ru"', 'book', 'theory', 'Русский ЕГЭ', `темы: пройдено ${ruPassedList().length} из ${RU_PATH.length}${ruTopic() ? ` · сейчас задание ${ruTopic()}` : ''}${best ? ` · пробник ${best} из 28` : ''}`, pct(ru))}
     ${ph.id === 'p1' ? '' : row('data-a="tab" data-t="soc"', 'scale', 'theory', 'Обществознание', 'все темы', pct(poolPct(keysOf('soc:'))))}
     ${ph.id === 'p1' ? '' : row('data-a="tab" data-t="en"', 'globe', 'theory', 'Английский', 'все разделы', pct(poolPct(keysOf('en:'))))}
     ${row('data-a="openGifts"', 'gift', '', 'Копилка', g ? `на «${esc(g.title)}» - ${pct(Math.min(1, state.coins / g.cost))}` : 'добавь подарок, на который копишь', rub(state.coins), 'background:var(--gold-soft);color:var(--gold)')}
@@ -171,6 +180,7 @@ vHome = function () {
   const P = planToday(); planSnap(P);
   return `<header class="stack" style="gap:4px;padding-top:6px"><div class="kicker">${WD[new Date().getDay()]}, ${fmtD(today())}</div><h1 class="h1">Привет, Даша!</h1><div class="muted small">офлайн-версия, всё на этом устройстве · ${dataLinkHTML()}</div></header>
   ${resumeCard()}
+  ${iconCardHTML()}
   ${coverHTML()}
   ${planCardHTML(P)}
   ${weekHTML()}
@@ -232,7 +242,12 @@ Object.assign(A, {
     else if (id === 'mybooks') { finMinePools(); start((TASK_ITEMS['fin:mine'] || []).length ? 'fin:mine' : 'fin:all'); }
     else if (id === 'full') { finRemember('write'); go({ v: 'final', sub: 'write', part: 'full' }); }
     else if (id === 'review') { finRemember('works'); go({ v: 'final', sub: 'works' }); }
-    else if (id === 'ru') startMix();
+    else if (id === 'ru') {
+      const n = day().pk?.ru || ruTopic(); if (!n) { startMix(); return; }
+      const d = day(); d.pk = { ...(d.pk || {}), ru: n }; save();
+      if (ruP(n).th) ruPractice(n); else go({ v: 'task', n, sub: 'theory' });
+    }
+    else if (id === 'rurev') { const pool = ruReviewPool(); if (pool.length) startPool('Повторение пройденного', pool, 10, { key: 'rev:ru' }); }
     else if (id === 'soc' || id === 'en') A.quick({ dataset: { k: id } });
     else if (id === 'mock') startMock();
     else if (id === 'ess27') A.continue({ dataset: { p: '2' } });
@@ -245,3 +260,57 @@ Object.assign(A, {
     save(); render(); toast(m[id] ? 'Отмечено: сделано' : 'Отметка снята');
   },
 });
+
+/* ---- русский по темам: сначала теория, потом закрепление (её просьба 01.11.2026: «не тупо всегда практика,
+   а чтобы была теория, а потом теорию закрепляла»). Темы - в порядке «быстрых баллов» из артефакта (PRIO),
+   потом задания по тексту. Тема пройдена, когда теория прочитана и решено 25 разных заданий темы
+   (или все, если их меньше), - или если она нажала «Уже знаю». state.ruPath[номер] = { th: дата теории, done: дата «уже знаю» } ---- */
+const RU_PATH = [4, 8, 22, 15, 12, 9, 16, 17, 5, 7, 6, 10, 11, 13, 14, 18, 19, 20, 26, 24, 3, 21, 23, 25, 1, 2];
+const ruP = n => state.ruPath?.[n] || {};
+const ruSet = (n, patch) => { state.ruPath = state.ruPath || {}; state.ruPath[n] = { ...(state.ruPath[n] || {}), ...patch }; };
+const ruTopicKey = n => ((TASK_ITEMS['ru:' + n] || []).length ? 'ru:' : 'ruE:') + n;
+const ruTotal = n => (TASK_ITEMS['ru:' + n] || []).length + (TASK_ITEMS['ruE:' + n] || []).length;
+const ruSeen = n => mastery('ru:' + n).seen + mastery('ruE:' + n).seen;
+const ruPassed = n => { const p = ruP(n); return !!p.done || (!!p.th && ruSeen(n) >= Math.min(25, ruTotal(n))); };
+const ruPassedList = () => RU_PATH.filter(ruPassed);
+const ruTopic = () => RU_PATH.find(n => ruTask(n) && ruTotal(n) && !ruPassed(n)) || null;
+/* повторение: задания из пройденных тем (и тренировка, и «как на ЕГЭ») */
+const ruReviewPool = () => [...new Set(ruPassedList().flatMap(n => [...(TASK_ITEMS['ru:' + n] || []), ...(TASK_ITEMS['ruE:' + n] || [])]))];
+function ruPractice(n, cnt = 10) {
+  const k = ruTopicKey(n), T = ruTask(n);
+  startPool(`Задание ${n}: ${T ? T.title : ''}`, TASK_ITEMS[k] || [], cnt, { key: k });
+}
+/* экран задания, вкладка «Теория»: внизу - «Прочитала - закрепить» */
+const vTask0 = vTask;
+vTask = function (r) {
+  const h = vTask0(r), T = ruTask(r.n); if (!T || T.n === 27 || !ruTotal(T.n)) return h;
+  const m = mastery('ru:' + T.n), sub = r.sub || (m.total > 0 && m.seen ? 'train' : 'theory');
+  if (sub !== 'theory') return h;
+  const th = ruP(T.n).th, inPath = ruTopic() === T.n;
+  return h + `<section class="card" style="border-left:5px solid var(--violet)">
+    <h2 class="h2">${th ? 'Закрепить тему' : 'Прочитала теорию?'}</h2>
+    <p class="muted small" style="margin:0">${th ? `Теорию ты прочитала ${fmtD(th)}. ` : ''}Сразу закрепи: 10 заданий только по этой теме. Ошибки уйдут в красную тетрадь - повторишь их в другие дни.${inPath ? ' Это тема дня из плана.' : ''}</p>
+    <button class="btn primary block" data-a="ruLearn" data-n="${T.n}">${ic('play', 18)} Прочитала - закрепить</button></section>`;
+};
+Object.assign(A, {
+  ruLearn: b => { const n = +b.dataset.n; if (!ruP(n).th) { ruSet(n, { th: today() }); save(); } ruPractice(n); },
+  ruSkip: b => {
+    const n = +b.dataset.n; ruSet(n, { done: today() });
+    const d = day(); if (d.pk?.ru === n) { const pk = { ...d.pk }; delete pk.ru; d.pk = pk; }
+    save(); render(); toast(`Задание ${n} отмечено как знакомое - дальше следующая тема`);
+  },
+});
+/* «По теме» на экране задания - тоже с ключом темы: в конце видно, сколько осталось, а план засчитывает ответы */
+A.startTask = b => ruPractice(+b.dataset.n);
+/* экран плана: темы русского по порядку */
+const vPlan1 = vPlan;
+vPlan = function () {
+  const h = vPlan1(), cur = ruTopic(), done = ruPassedList().length;
+  const row = n => { const T = ruTask(n), ok = ruPassed(n), now = n === cur; return `<button class="prow" data-a="openTask" data-n="${n}"><span class="tnum ${ok ? 'done' : now ? '' : 'theory'}" style="font-size:16px">${ok ? ic('check', 20) : n}</span><span style="min-width:0"><span class="ttl">${esc(T.title)}</span><br><span class="tmeta">задание ${n}${ok ? (ruP(n).done && !ruP(n).th ? ' · отмечено «уже знаю»' : ' · пройдено') : now ? ' · тема сейчас' : ''}</span></span><span class="pts num">${ruSeen(n)}/${Math.min(25, ruTotal(n))}</span></button>`; };
+  const card = `<section class="card"><div class="row sb"><h2 class="h2">Русский по темам</h2><span class="kicker">${done} из ${RU_PATH.length}</span></div>
+    <p class="muted small" style="margin:0">Каждая тема: сначала теория, потом закрепление. Тема пройдена, когда решено 25 разных заданий по ней. Порядок - от самых быстрых баллов.</p>
+    <div class="bar"><i style="width:${done / RU_PATH.length * 100}%"></i></div>
+    <details class="fbd" data-fd="ru-path" ${ui.finOpen?.['ru-path'] ? 'open' : ''}><summary>Все темы по порядку</summary><div>${RU_PATH.filter(n => ruTask(n)).map(row).join('')}</div></details></section>`;
+  const at = h.indexOf('<section class="card"><h2 class="h2">Этапы до экзамена</h2>');
+  return at >= 0 ? h.slice(0, at) + card + h.slice(at) : h + card;
+};

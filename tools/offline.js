@@ -419,6 +419,7 @@ function vData() {
     <label class="btn primary block" for="impFile">${ic('plus', 18)} Выбрать файл</label><input type="file" id="impFile" accept=".json,application/json,text/plain" hidden>
     <details class="fbd"><summary>Вставить копию текстом</summary><form class="stack" data-f="impCode" style="margin-top:8px"><textarea class="codebox" id="impCode" placeholder="Вставь сюда текст копии"></textarea><button class="btn block">Загрузить из текста</button></form></details>
     ${before ? `<button class="btn ghost block" data-a="importUndo">${ic('repeat', 18)} Вернуть как было до загрузки (${fmtD(before.d)})</button>` : ''}</section>
+  ${isIOS() && !single ? `<section class="card"><h2 class="h2">Значок «ЕГЭ на 100»</h2><p class="muted small" style="margin:0">Если на экране «Домой» старый значок «ЕГЭ на 70» - поставь новый. iPhone не меняет его сам.</p>${iconStepsHTML()}<div class="row">${isStandalone() ? `<button class="btn primary" data-a="iconCopy">Скопировать прогресс</button>` : ''}${isStandalone() ? `<button class="btn" data-a="iconPaste">Вставить прогресс</button>` : ''}</div></section>` : ''}
   ${reportsCardHTML()}
   ${single || isIOS() ? '' : `<section class="card"><h2 class="h2">Приложение одним файлом</h2><p class="muted small" style="margin:0">Запасной вариант для компьютера: один HTML-файл, открывается двойным щелчком в любом браузере, интернет не нужен. Прогресс у файла свой - переноси его копией.</p><a class="btn block" href="ege70-offline.html" download="ege70-offline.html">Скачать файл приложения</a></section>`}
   <section class="card"><h2 class="h2">Как поставить на телефон</h2>
@@ -507,6 +508,85 @@ document.addEventListener('change', e => {
 document.addEventListener('submit', e => {
   if (!e.target.closest('form[data-f="impCode"]')) return;
   e.preventDefault(); const v = $('#impCode')?.value || ''; if (!v.trim()) { toast('Вставь текст копии'); return; } importText(v);
+});
+
+/* ---- русский: теория из методички ФИПИ-2026, новые тексты и задания (tools/content/ru-extra.js) ---- */
+for (const [n, blocks] of Object.entries(RU_THEORY_ADD)) { const t = ruTask(+n); if (t) t.theory = [...(t.theory || []), ...blocks]; }
+Object.assign(RU_TEXTS, RU_TEXTS_ADD);
+for (const it of RU_PRACTICE_ADD) if (!ITEMS[it.id]) addItem('ru:' + it.task, { exc: false, ...it, subj: 'ru' });
+for (const it of [...RU_TEXT_ITEMS_ADD, ...RU_EXAM_ADD]) if (!ITEMS[it.id]) addItem('ruE:' + it.task, { exc: false, ...it, subj: 'ru', exam: true });
+/* задание 7 в формате 2026 года («исправь ошибку и запиши слово») - и в «Как на ЕГЭ», и в пробнике */
+for (const it of RU_PRACTICE_ADD) if (it.task === 7 && !(TASK_ITEMS['ruE:7'] || []).includes(it.id)) (TASK_ITEMS['ruE:7'] = TASK_ITEMS['ruE:7'] || []).push(it.id);
+{ /* паронимы «как на ЕГЭ»: e5-g01..g12 собраны из 20 первых слов, каждое по три раза, - из-за них в тестах повторялись
+     одни и те же слова (её жалоба 01.11.2026). Убираю их из тренировки (ответы и ошибки по ним остаются)
+     и собираю эти 20 слов заново, каждое по одному разу: e5-x01..x04. Остальные 161 слово - в e5-g13.. по одному разу */
+  const old = id => /^e5-g(0\d|1[0-2])$/.test(id);
+  TASK_ITEMS['ruE:5'] = (TASK_ITEMS['ruE:5'] || []).filter(id => !old(id));
+  const P = Array.from({ length: 20 }, (_, i) => ITEMS['r5-' + String(i + 1).padStart(2, '0')]).filter(x => x && x.o?.length === 2 && x.q.includes('…'));
+  const R = rng(20261101), ord = pickN(P, P.length, R);
+  for (let g = 0, k = 1; g + 5 <= ord.length; g += 5, k++) {
+    const five = ord.slice(g, g + 5), bad = Math.floor(R() * 5), id = 'e5-x' + String(k).padStart(2, '0'); if (ITEMS[id]) continue;
+    const o = five.map((x, i) => x.q.replace('…', (i === bad ? x.o[1 - x.a] : x.o[x.a]).toUpperCase()));
+    addItem('ruE:5', { id, subj: 'ru', task: 5, exam: true, exc: false, type: 'choice', long: true, q: 'В каком предложении выделенное слово употреблено НЕВЕРНО?', o, a: bad,
+      ex: `Нужно: ${five[bad].o[five[bad].a].toUpperCase()}. ${five[bad].ex}`,
+      parts: five.map((x, i) => ({ n: i + 1, t: o[i], ok: i === bad, v: i === bad ? `ошибка - нужно ${x.o[x.a].toUpperCase()}` : `верно: ${x.o[x.a].toUpperCase()}`, ex: x.ex })) });
+  }
+  /* словарик: все пары паронимов из тренировки - последним блоком теории задания 5 */
+  const t5 = ruTask(5), list = (TASK_ITEMS['ru:5'] || []).map(id => ITEMS[id]).filter(x => x && x.o?.length === 2);
+  if (t5 && list.length) {
+    const low = w => String(w).toLowerCase(), rows = list.map(x => ({ k: low(x.o[x.a]), t: `**${low(x.o[x.a])}** / ${low(x.o[1 - x.a])} - ${x.ex}` })).sort((a, b) => a.k.localeCompare(b.k, 'ru'));
+    t5.theory = [...t5.theory, { h: `Словарик паронимов: все ${rows.length} пар из тренировки`, p: 'Жирным - слово, которое подходит в примере из тренировки.\n' + rows.map(r => r.t).join('\n') }];
+  }
+}
+
+/* ---- значок «ЕГЭ на 100» на iPhone (её просьба 01.11.2026: «хочу, чтобы сама иконка была 100»).
+   iPhone запоминает значок при установке, а у каждого установленного значка своё хранилище.
+   Поэтому: поставить новый значок из Safari, в старом нажать «Скопировать прогресс», в новом - «Вставить прогресс» ---- */
+const isStandalone = () => navigator.standalone === true || !!window.matchMedia?.('(display-mode: standalone)').matches;
+const isFreshProgress = () => !Object.keys(state.ans || {}).length && !state.importedAt && !(state.coins > 0);
+let iconMovePending = false;
+const ICON_SITE = 'ddds555.github.io/dds55555';
+function iconStepsHTML() {
+  return `<ol class="isteps">
+    <li><b>Поставь новый значок.</b> Открой <b>Safari</b> и зайди на <b>${ICON_SITE}</b> → внизу «Поделиться» (квадрат со стрелкой вверх) → «На экран „Домой“» → «Добавить». Появится второй значок - «ЕГЭ на 100».</li>
+    <li><b>Скопируй прогресс.</b> Вернись в старый значок и нажми «Скопировать прогресс».</li>
+    <li><b>Вставь прогресс.</b> Открой новый значок «ЕГЭ на 100» → на главной «Вставить прогресс» → «Вставить» → «Загрузить».</li>
+    <li><b>Удали старый значок.</b> Проверь, что всё на месте, потом подержи палец на старом значке → «Удалить закладку».</li>
+  </ol>`;
+}
+/* карточка на главной: в старом значке - как поставить новый, в новом (пустом) - вставить прогресс, в Safari - как добавить значок */
+function iconCardHTML() {
+  if (!isIOS() || state.iconDone || window.EGE_SINGLE) return '';
+  if (!isStandalone()) return `<section class="card icard"><div class="row sb"><h2 class="h2">Значок «ЕГЭ на 100»</h2></div><p style="margin:0">Ты в Safari. Нажми внизу «Поделиться» (квадрат со стрелкой) → «На экран „Домой“» → «Добавить». Потом открой новый значок «ЕГЭ на 100».</p><button class="btn sm ghost" data-a="iconHow">Все шаги</button></section>`;
+  if (isFreshProgress()) return `<section class="card icard"><h2 class="h2">Это новый значок «ЕГЭ на 100»?</h2><p style="margin:0">Перенеси прогресс из старого значка: открой старый значок, нажми там «Скопировать прогресс», вернись сюда и нажми:</p><button class="btn primary block" data-a="iconPaste">${ic('plus', 18)} Вставить прогресс</button><button class="btn sm ghost" data-a="iconSkip">Начать с нуля</button></section>`;
+  return `<section class="card icard"><div class="row sb"><h2 class="h2">Значок «100» на экране «Домой»</h2></div><p style="margin:0">iPhone не меняет значок сам. Поставь новый - это 2 минуты, прогресс не пропадёт.</p><div class="row"><button class="btn primary" data-a="iconHow">Как поставить</button><button class="btn" data-a="iconCopy">Скопировать прогресс</button><button class="btn sm ghost" data-a="iconSkip">Не нужно</button></div></section>`;
+}
+async function iconPasteText(t) {
+  if (!String(t || '').trim()) { toast('Буфер пустой - сначала нажми «Скопировать прогресс» в старом значке'); return; }
+  iconMovePending = true; await importText(t);
+}
+Object.assign(A, {
+  iconHow: () => openSheet(`<h2 class="h2">Значок «100» на экране «Домой»</h2><p class="muted small" style="margin:0">iPhone не меняет значок сам, поэтому ставим новый. Старый удаляешь в самом конце - прогресс не пропадёт.</p>${iconStepsHTML()}
+    ${isStandalone() && !isFreshProgress() ? `<button class="btn primary block" data-a="iconCopy">${ic('check', 18)} Скопировать прогресс (шаг 2)</button>` : ''}
+    ${isStandalone() && isFreshProgress() ? `<button class="btn primary block" data-a="iconPaste">${ic('plus', 18)} Вставить прогресс (шаг 3)</button>` : ''}
+    <button class="btn block" data-a="closeSheet">Закрыть</button>`),
+  iconCopy: () => {
+    const t = backupJSON();
+    navigator.clipboard?.writeText(t).then(() => { closeSheet(); toast('Прогресс скопирован. Теперь открой новый значок «ЕГЭ на 100» и нажми «Вставить прогресс»'); },
+      () => openSheet(`<h2 class="h2">Скопируй прогресс</h2><p class="muted small" style="margin:0">Нажми на поле, «Выбрать все» → «Скопировать». Потом открой новый значок.</p><textarea class="codebox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`))
+      || toast('Не получилось скопировать');
+  },
+  iconPaste: () => {
+    const manual = () => openSheet(`<h2 class="h2">Вставь прогресс</h2><p class="muted small" style="margin:0">Подержи палец в поле → «Вставить», потом «Загрузить».</p><form class="stack" data-f="iconPaste"><textarea class="codebox" id="iconPasteBox" placeholder="Сюда - скопированный прогресс"></textarea><button class="btn primary block">Загрузить</button></form>`);
+    if (!navigator.clipboard?.readText) { manual(); return; }
+    navigator.clipboard.readText().then(iconPasteText, manual);
+  },
+  iconSkip: () => { state.iconDone = today(); save(); render(); },
+});
+{ const y0 = A.importYes; A.importYes = b => { const mv = iconMovePending; iconMovePending = false; y0(b); if (mv) { state.iconDone = today(); save(); render(); toast('Готово: прогресс перенесён. Старый значок можно удалить'); } }; }
+document.addEventListener('submit', e => {
+  if (!e.target.closest('form[data-f="iconPaste"]')) return;
+  e.preventDefault(); const v = $('#iconPasteBox')?.value || ''; iconPasteText(v);
 });
 
 /* ---- работа без интернета: service worker (только в версии с сайта; файлу-копии он не нужен) ---- */
