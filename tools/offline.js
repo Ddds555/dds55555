@@ -539,6 +539,88 @@ for (const it of RU_PRACTICE_ADD) if (it.task === 7 && !(TASK_ITEMS['ruE:7'] || 
   }
 }
 
+/* ---- русский: Навигатор ФИПИ-2026 (tools/content/navigator.js; она прислала его 01.11.2026, «всё это просмотри»):
+   теория к заданиям, официальные списки и задания на них. id не менять: по ним хранятся ответы ---- */
+{
+  const th = (n, ...blocks) => { const t = ruTask(n); if (t) t.theory = [...(t.theory || []), ...blocks]; };
+  const add = (key, it) => { if (!ITEMS[it.id]) addItem(key, { exc: false, subj: 'ru', ...it }); };
+  const nn = (p, i, w = 2) => p + String(i + 1).padStart(w, '0');
+  const byLetter = list => { const g = {}; for (const w of list) { const L = w[0].toUpperCase(); (g[L] = g[L] || []).push(w); } return Object.entries(g).map(([L, ws]) => `**${L}:** ${ws.join('; ')}`).join('\n'); };
+  for (const [n, blocks] of Object.entries(NAV_THEORY)) th(+n, ...blocks);
+
+  /* 4: начальные формы из списка ФИПИ; после ответа - «Запомни»: вся пара (бородА - бОроду) */
+  NAV_STRESS4.forEach(([w, c, note], i) => { if (!STRESS_NOTE[w]) STRESS_NOTE[w] = [0, note]; add('ru:4', { id: nn('n4-', i, 3), task: 4, type: 'stress', w, c }); });
+
+  /* 9: словарные слова ФИПИ */
+  th(9, { h: `Навигатор ФИПИ: словарные слова (${NAV_DICT9.length})`, p: 'Непроверяемые безударные гласные в корне - их нельзя проверить, только запомнить. Учи вместе с однокоренными словами (так они и даны).\n' + byLetter(NAV_DICT9) });
+
+  /* 13: слова меры и степени, «далеко не / отнюдь не», НИ */
+  for (const it of NAV_ITEMS13) add('ru:13', { task: 13, type: 'choice', ...it });
+
+  /* 14: смысловые пары и сложные прилагательные - по одному; наречия из списков ФИПИ - пятёрками «какие пишутся слитно» */
+  NAV_ADV_PAIRS.forEach(([q, a, ex], i) => add('ru:14', { id: nn('n14-p', i), task: 14, type: 'choice', q, o: ['слитно', 'раздельно', 'через дефис'], a, ex: ex + ' (Пример ФИПИ.)' }));
+  NAV_ADJ14.forEach(([q, a], i) => {
+    const m = q.match(/^\((.+)\)(.+)$/), w = a === 2 ? m[1] + '-' + m[2] : m[1] + m[2];
+    add('ru:14', { id: nn('n14-c', i), task: 14, type: 'choice', q, o: ['слитно', 'раздельно', 'через дефис'], a,
+      ex: a === 2 ? `${w}: в первой части есть суффикс, части равноправны (можно вставить «и») - через дефис. (Пример ФИПИ.)` : `${w}: в первой части нет суффикса, одна часть подчиняется другой - слитно. (Пример ФИПИ.)` });
+  });
+  {
+    /* без предложения двояко (впервые - в первые дни, сплеча - с плеча, в ходу - к входу): в пятёрки не беру, они только в теории */
+    const PRE = ['без', 'во', 'до', 'за', 'из', 'на', 'от', 'по', 'со', 'в', 'к', 'с'], skip = new Set([...NAV_ADV_SKIP, 'всецело', 'назло', 'вправо', 'вдвое', 'втрое', 'натрое', 'напоказ', 'поверху', 'поначалу', 'сплеча', 'вправду', 'впервые', 'вплотную', 'вовсю']);
+    const skipApart = new Set(['без толку', 'в ходу', 'за границей', 'за границу']);
+    const list = s => s.split(/[.,]/).map(w => w.trim().toLowerCase()).filter(Boolean);
+    const tog = list(NAV_ADV_TOGETHER).filter(w => !skip.has(w)).map(w => { const p = PRE.find(p => w.startsWith(p) && w.length - p.length >= 3); return p && { t: `(${p})${w.slice(p.length)}`, w, ok: true }; }).filter(Boolean);
+    const apart = list(NAV_ADV_APART).map(w => w.split(' ')).filter(x => x.length === 2 && [...PRE, 'вне', 'про'].includes(x[0]) && !skipApart.has(x.join(' '))).map(x => ({ t: `(${x[0]})${x[1]}`, w: x.join(' '), ok: false }));
+    const R = rng(20261104), A = pickN(tog, tog.length, R), B = pickN(apart, apart.length, R), G = Math.ceil((A.length + B.length) / 5);
+    for (let g = 0; g < G; g++) {
+      const cut = (L, k) => L.slice(Math.round(k * L.length / G), Math.round((k + 1) * L.length / G));
+      let five = [...cut(A, g), ...cut(B, g)];
+      while (five.length < 5) { const rest = [...A, ...B].filter(x => !five.includes(x) && x.ok === (five.filter(y => y.ok).length < 3)); if (!rest.length) break; five.push(rest[Math.floor(R() * rest.length)]); }
+      five = pickN(five.slice(0, 5), 5, R);
+      add('ru:14', { id: nn('n14-a', g), task: 14, type: 'multi', q: 'Какие из этих слов пишутся СЛИТНО? Отметь все.', o: five.map(x => x.t), a: five.map((x, i) => x.ok ? i : -1).filter(i => i >= 0),
+        ex: five.map(x => `**${x.w}** - ${x.ok ? 'слитно' : 'раздельно'}`).join('; ') + '. Все наречия из списка ФИПИ - в теории задания 14.' });
+    }
+    th(14, { h: 'Навигатор ФИПИ: наречия, которые пишутся слитно', p: NAV_ADV_TOGETHER }, { h: 'Навигатор ФИПИ: наречные сочетания, которые пишутся раздельно', p: NAV_ADV_APART });
+  }
+
+  /* 22: только 23 средства из списка ФИПИ. Оксюморона в списке нет - задания, где он ответ или вариант справа, убираю из тренировки
+     (ответы и ошибки по ним остаются), в двух заданиях он был лишь неверным вариантом - заменяю на средство из списка */
+  const TERM = Object.fromEntries(NAV_TERMS22.map(([t, , d]) => [t, d])), DEV = NAV_TERMS22.map(t => t[0]);
+  const oxy = id => { const x = ITEMS[id]; return !!x && (x.o?.[x.a] === 'оксюморон' || (x.right || []).includes('оксюморон')); };
+  for (const k of ['ru:22', 'ruE:22']) if (TASK_ITEMS[k]) TASK_ITEMS[k] = TASK_ITEMS[k].filter(id => !oxy(id));
+  for (const [id, to] of [['r22-04', 'эпитет'], ['r22-10', 'метонимия']]) { const x = ITEMS[id], i = x?.o ? x.o.indexOf('оксюморон') : -1; if (i >= 0 && i !== x.a) x.o[i] = to; }
+  const R22 = rng(20261102);
+  NAV_ITEMS22.forEach(([id, s, a, wrong]) => { const o = pickN([a, ...wrong], 4, R22); add('ru:22', { id, task: 22, type: 'choice', q: 'Какое средство выразительности? ' + s, o, a: o.indexOf(a), ex: `**${a[0].toUpperCase() + a.slice(1)}** - ${TERM[a]}` }); });
+  { /* 22 «как на ЕГЭ»: пять примеров и девять средств; в правом столбце нет средств, которые есть и в других примерах.
+       Старых e22-g с оксюмороном было 8 из 10 - взамен 14 новых */
+    const ALL = NAV_ITEMS22.map(([id, s, a]) => ({ id, s, a })), used = {}, R = rng(20261103);
+    for (let k = 0; k < 14; k++) {
+      const id = nn('e22-x', k); if (ITEMS[id]) continue;
+      let five = null, right = null;
+      for (let t = 0; t < 500 && !right; t++) {
+        const cand = pickN(ALL, ALL.length, R).sort((x, y) => (t < 250 ? (used[x.id] || 0) - (used[y.id] || 0) : 0)), pick = [];
+        for (const x of cand) if (pick.length < 5 && !pick.some(y => y.a === x.a)) pick.push(x);
+        const devs = pick.map(x => x.a), also = new Set(pick.flatMap(x => NAV_ALSO22[x.id] || []));
+        if (devs.some(d => also.has(d))) continue;
+        const pool = DEV.filter(d => !devs.includes(d) && !also.has(d)); if (pool.length < 4) continue;
+        five = pick; right = pickN([...devs, ...pickN(pool, 4, R)], 9, R);
+      }
+      if (!right) continue;
+      for (const x of five) used[x.id] = (used[x.id] || 0) + 1;
+      add('ruE:22', { id, task: 22, exam: true, type: 'match', pts: 2, q: 'Установите соответствие между примерами и средствами выразительности: к каждому примеру подберите средство из правого столбца.',
+        left: five.map(x => x.s), right, a: five.map(x => right.indexOf(x.a)),
+        ex: 'Сначала то, что видно сразу: «как, словно, будто» - сравнение; одинаковое начало - анафора, конец - эпифора; вопрос и ответ - вопросно-ответная форма; точка посреди мысли - парцелляция. Потом тропы: похоже - метафора, неживое как живое - олицетворение, рядом - метонимия.',
+        parts: five.map((x, i) => ({ n: LET[i], t: x.s, ok: true, v: `${x.a} - это номер ${right.indexOf(x.a) + 1}`, ex: TERM[x.a] })) });
+    }
+  }
+  th(22, { h: 'Навигатор ФИПИ: 23 средства выразительности', p: [['фонетика', 'Звуки (фонетические средства)'], ['лексика', 'Тропы - слово в переносном смысле (лексические средства)'], ['синтаксис', 'Синтаксические средства и приёмы']]
+    .map(([g, name]) => `**${name}:**\n` + NAV_TERMS22.filter(t => t[1] === g).map(([t, , d]) => `• **${t}** - ${d}`).join('\n')).join('\n') });
+
+  /* 25: фразеологизмы ФИПИ - список в теории и «выпиши фразеологизм»; тренировка 25 берёт и их, и задания по текстам */
+  NAV_ITEMS25.forEach(([id, s, a]) => add('ru:25', { id, task: 25, type: 'input', q: `Выпишите фразеологизм из предложения: «${s}»`, a, ex: `Фразеологизм - «${a[0]}». Он из списка ФИПИ (список - в теории задания 25).` }));
+  th(25, { h: `Навигатор ФИПИ: фразеологизмы (${NAV_PHRASEO.length})`, p: 'Фразеологизм - устойчивое сочетание, смысл которого не складывается из смысла слов (кот наплакал = очень мало). Эти фразеологизмы могут встретиться в задании 25; в скобках - варианты.\n' + byLetter(NAV_PHRASEO) });
+}
+
 /* ---- значок «ЕГЭ на 100» на iPhone (её просьба 01.11.2026: «хочу, чтобы сама иконка была 100»).
    iPhone запоминает значок при установке, а у каждого установленного значка своё хранилище.
    Поэтому: поставить новый значок из Safari, в старом нажать «Скопировать прогресс», в новом - «Вставить прогресс» ---- */
