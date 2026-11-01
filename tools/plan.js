@@ -278,7 +278,9 @@ const ruTopic = () => RU_PATH.find(n => ruTask(n) && ruTotal(n) && !ruPassed(n))
 const ruReviewPool = () => [...new Set(ruPassedList().flatMap(n => [...(TASK_ITEMS['ru:' + n] || []), ...(TASK_ITEMS['ruE:' + n] || [])]))];
 function ruPractice(n, cnt = 10) {
   const k = ruTopicKey(n), T = ruTask(n);
-  startPool(`Задание ${n}: ${T ? T.title : ''}`, TASK_ITEMS[k] || [], cnt, { key: k });
+  /* 25: в тренировке только фразеологизмы ФИПИ - добавляю и задания по текстам (синонимы, антонимы) */
+  const pool = n === 25 ? [...(TASK_ITEMS['ru:25'] || []), ...(TASK_ITEMS['ruE:25'] || [])] : TASK_ITEMS[k] || [];
+  startPool(`Задание ${n}: ${T ? T.title : ''}`, pool, cnt, { key: k });
 }
 /* экран задания, вкладка «Теория»: внизу - «Прочитала - закрепить» */
 const vTask0 = vTask;
