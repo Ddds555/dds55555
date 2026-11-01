@@ -1,6 +1,6 @@
 /* Service worker «ЕГЭ на 100»: хранит приложение на устройстве, чтобы оно открывалось без интернета.
    Собирается из tools/sw.template.js (tools/build.py подставляет версию и список файлов). */
-const VERSION = "42a2f701b0";
+const VERSION = "bab664d472";
 const CACHE = 'ege70-' + VERSION;
 const ASSETS = [
  "./",
