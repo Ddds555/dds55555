@@ -73,7 +73,7 @@ const SOC_ADD = {
     ] },
 };
 /* порядок тем в плане: разделы кодификатора по порядку, налоги - после экономики, органы власти - после политики */
-const SOC_ORDER_IDS = ['man', 'econ', 'tax', 'social', 'polit', 'power', 'law', 'traps'];
+const SOC_ORDER_IDS = ['ege', 'man', 'econ', 'tax', 'social', 'polit', 'power', 'law', 'traps'];
 
 /* английский: задания в формате ЕГЭ - грамматика (19-24), словообразование (25-29), лексика (30-36) */
 const EN_ADD = {
