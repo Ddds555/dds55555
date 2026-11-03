@@ -286,13 +286,12 @@ function finParaModelHTML() {
       ${args.slice(1).map(a => `<article class="sheet-note"><h3>${esc(a.title)}</h3><p>${md(a.ep)}</p><p><b>Вывод:</b> ${md(a.proves || '')}</p></article>`).join('')}
       <p class="muted small" style="margin:0">Проверь себя: есть ли у тебя автор и название, эпизод в 3-5 предложениях без пересказа всей книги, вывод одной фразой и слова из темы в последнем предложении.</p></div></details>` : '';
   }
-  return `<section class="card"><h2 class="h2">Твои книги и образец</h2>${mine}${model}
-    <div class="row"><button class="btn sm" data-a="copyPara">Скопировать абзац для проверки Claude</button></div></section>`;
+  return `<section class="card"><h2 class="h2">Твои книги и образец</h2>${mine}${model}</section>`;
 }
 const finParaHTML0 = finParaHTML;
 finParaHTML = () => finParaHTML0() + finParaModelHTML();
 const finFullHTML0 = finFullHTML;
-finFullHTML = () => finFullHTML0() + `<section class="card"><h2 class="h2">Проверка</h2><p class="muted small" style="margin:0">Когда есть интернет, скопируй сочинение и вставь его в чат с Claude: проверю как комиссия по критериям К1-К5, найду воду и повторы, подскажу, чем заменить.</p><button class="btn block" data-a="copyEssay">Скопировать сочинение для проверки Claude</button><button class="btn sm ghost" data-a="finTab" data-s="words">Слова и фразы - если пишется «водой»</button></section>`;
+finFullHTML = () => finFullHTML0() + `<section class="card"><h2 class="h2">Если пишется «водой»</h2><p class="muted small" style="margin:0">Слова к темам, готовые фразы для каждой части и примеры «было - стало» - во вкладке «Слова».</p><button class="btn sm" data-a="finTab" data-s="words">Открыть «Слова»</button></section>`;
 const finStepsHTML0 = finStepsHTML;
 finStepsHTML = () => finStepsHTML0() + `<section class="card"><div class="row sb"><h2 class="h2">Если пишется «водой»</h2></div><p class="muted small" style="margin:0">Слова к темам (доброта, милосердие, честь, совесть, равнодушие…), готовые фразы для каждой части и примеры «было - стало» - во вкладке «Слова».</p><button class="btn" data-a="finTab" data-s="words">Открыть «Слова»</button></section>`;
 /* вкладка «Сочинение» открывается там, где была в прошлый раз */
@@ -341,54 +340,209 @@ async function importText(text) {
     <p class="muted small" style="margin:0">Прогресс на этом устройстве заменится копией. Если передумаешь - «Вернуть как было» в «Моих данных».</p>
     <div class="row"><button class="btn primary" data-a="importYes">${ic('check', 18)} Загрузить</button><button class="btn" data-a="closeSheet">Отмена</button></div>`);
 }
-/* ---- жалобы «Здесь ошибка?»: в офлайне их никто не проверяет сам - список копируется для Claude,
-   а ответы Claude приходят с обновлением приложения (tools/report-checks.json -> REPORT_CHECKS) ---- */
+/* ================= ChatGPT вместо Claude (03.11.2026: подписка на Claude заканчивается, у неё есть ChatGPT Plus) =================
+   Кнопка «… в ChatGPT» - ссылка на chatgpt.com. По нажатию собираем запрос (задание и её ответ, сочинение и критерии ФИПИ-2026),
+   копируем его в буфер и, если он помещается в ссылку, передаём как ?q= - ChatGPT сразу его отправит.
+   Длинный запрос (сочинение с исходным текстом) в ссылку не влезает: ChatGPT откроется пустым, текст вставляется из буфера.
+   «Только скопировать» - для приложения ChatGPT: открыть его самой и вставить. */
+const GPT_URL = 'https://chatgpt.com/';
+const GPT_Q_MAX = 7000; // длина закодированного запроса в ссылке; длиннее - только через буфер
+const GPT_STYLE = 'Отвечай по-русски, простыми словами и без воды, главное выдели жирным.';
+const GPT_NOTE = '<p class="muted small" style="margin:0">Откроется ChatGPT с готовым запросом. Если он откроется пустым или не в твоём аккаунте - открой приложение ChatGPT, нажми в поле → «Вставить»: запрос уже скопирован.</p>';
+const gptA = (kind, label, cls = 'btn primary block', attrs = '') =>
+  `<a class="${cls}" data-gpt="${kind}"${attrs} href="${GPT_URL}" target="_blank" rel="noopener">${ic('spark', 18)} ${esc(label)}</a>`;
+const GPT_LABEL = { ess27: 'Проверить в ChatGPT по критериям', ess: 'Проверить на зачёт в ChatGPT', para: 'Проверить абзац в ChatGPT', en: 'Проверить в ChatGPT по критериям' };
+/* блок под сочинением, абзацем, письмом и эссе (вставляется вместо подписи «проверка через Claude», см. PATCHES в tools/build.py) */
+function gptBox(kind, id = '') {
+  const at = id ? ` data-id="${esc(id)}"` : '';
+  return `<div class="stack" style="gap:8px">${gptA(kind, GPT_LABEL[kind] || 'Проверить в ChatGPT', 'btn primary block', at)}
+    <button class="btn sm ghost" data-a="gptCopy" data-k="${kind}"${at}>Только скопировать запрос</button>${GPT_NOTE}</div>`;
+}
+const gptSubj = it => it.subj === 'soc' ? 'обществознанию' : it.subj === 'en' ? 'английскому языку' : it.subj === 'fin' ? 'литературе (итоговое сочинение)' : it.subj === 'ru' ? 'русскому языку' : 'предмету ЕГЭ';
+/* задание словами: что спросили, варианты, её ответ и ответ программы с пояснением */
+function gptItemText(it, my = '', ok = null) {
+  const opts = it.type === 'match' ? `\nВарианты справа: ${it.right.map((r, j) => `${j + 1}) ${r}`).join('; ')}`
+    : it.type === 'choice' || (it.type === 'multi' && isLong(it)) ? `\nВарианты:\n${it.o.map((o, i) => `${i + 1}) ${o}`).join('\n')}` : '';
+  const ex = explainOf(it), exc = excNoteOf(it);
+  return `${itemLabel(it)}\nЗадание: ${questionText(it)}${opts}${my ? `\nМой ответ: ${my}${ok === true ? ' (программа засчитала)' : ok === false ? ' (программа не засчитала)' : ''}` : ''}\nОтвет программы: ${correctText(it)}${ex ? `\nПояснение программы: ${ex}` : ''}${exc ? `\nПометка программы: ${exc.exc ? 'исключение - ' : ''}${exc.t}` : ''}`;
+}
+const GPT_ESS27 = 'К1 позиция автора по указанной проблеме (макс. 1);\nК2 комментарий к позиции автора: 2 примера-иллюстрации из текста с пояснениями, смысловая связь между ними и её анализ (макс. 3);\nК3 моё отношение к позиции автора и обоснование примером-аргументом - конкретным (если книга - с автором и названием) и не повторяющим суждения автора исходного текста (макс. 2);\nК4 фактологическая точность речи (макс. 1); К5 логичность речи (макс. 2); К6 соблюдение этических норм (макс. 1);\nК7 орфография (макс. 3); К8 пунктуация (макс. 3); К9 грамматика (макс. 3); К10 речевые нормы (макс. 3).\nВсего 22 балла. Объём - не меньше 150 слов.';
+const GPT_EN_CRIT = {
+  letter: 'К1 решение коммуникативной задачи (макс. 2); К2 организация текста (макс. 2); К3 языковое оформление текста (макс. 2). Всего 6 баллов.',
+  essay: 'К1 решение коммуникативной задачи (макс. 3); К2 организация текста (макс. 3); К3 лексика (макс. 3); К4 грамматика (макс. 3); К5 орфография и пунктуация (макс. 2). Всего 14 баллов.',
+};
+const GPT_EN_LIM = { letter: [90, 154], essay: [180, 275] };
+const reportLine = (r, i) => { const it = getItem(r.id); return `${i + 1}. ${it ? gptItemText(it, r.my) : `задание ${r.id} (его уже нет в программе)`}`; };
+const GPT_REPORTS_HEAD = 'Ты - строгий эксперт ЕГЭ (2026). Проверь задания из моей программы подготовки, на которые я пожаловалась («Здесь ошибка?»). Проверяй строго по правилам и материалам ФИПИ (кодификатор и демоверсия 2026, орфографический и орфоэпический словари): верны ли условие, варианты и ответ программы, нет ли второго верного ответа, не устарела ли норма. Не соглашайся со мной из вежливости - решай только по правилам.\nПо каждому номеру ответь: «в задании всё верно» или «в задании ошибка», почему - 1-2 предложения, и как правильно. ' + GPT_STYLE;
+const GPT_PROMPTS = {
+  item: a => {
+    const it = getItem(a.dataset.id); if (!it) return '';
+    const cur = ses && ses.ids && ses.ids[ses.i] === it.id && ses.last ? ses.last : null;
+    return `Ты - опытный репетитор по ${gptSubj(it)}, готовишь к ЕГЭ-2026 строго по материалам ФИПИ. Я тренируюсь в программе подготовки. Вот задание:\n\n${gptItemText(it, cur?.my, cur ? !!cur.ok : null)}\n\nОбъясни:\n1) почему верный ответ именно такой: сначала правило, потом разбор этого задания по шагам;\n2) ${cur && !cur.ok ? 'в чём моя ошибка и ' : ''}как быстро и без ошибок решать такие задания на экзамене: приём, опорные слова, ловушки;\n3) дай 5 похожих заданий в формате ЕГЭ, ответы с коротким пояснением - отдельно в самом конце.\nЕсли считаешь, что в задании или в ответе программы ошибка, скажи это прямо и объясни по правилам ФИПИ.\n${GPT_STYLE}`;
+  },
+  theory: () => {
+    const q = String(document.getElementById('gptQ')?.value || '').trim(), t = curTheory || {}, txt = String(t.text || '');
+    return `Ты - добрый и точный репетитор, готовишь к ЕГЭ-2026 строго по материалам ФИПИ. Тема: ${t.title || 'правило'}.\nКак это изложено в моей программе (кратко):\n${txt.slice(0, 700)}${txt.length > 700 ? '…' : ''}\n\n${q ? `Мой вопрос: ${q}\n\nОтветь на вопрос, потом` : 'Объясни эту тему с нуля, по шагам, на простых примерах, покажи типичные ловушки ЕГЭ. Потом'} дай 5 коротких заданий для проверки, ответы - отдельно в самом конце.\n${GPT_STYLE}`;
+  },
+  ess27: () => {
+    const d = state.draft || {}, text = String(d.text || '').trim(), src = String(d.src || '').trim(), wc = words(text);
+    if (wc < 30) { toast('Сначала напиши сочинение'); return ''; }
+    return `Ты - эксперт ЕГЭ по русскому языку. Проверь моё сочинение-рассуждение (задание 27) строго, как на экзамене, по критериям ФИПИ 2026:\n${GPT_ESS27}\nПо каждому критерию: балл и коротко почему. В К7-К10 выпиши каждую ошибку: как было → как правильно и правило в одну строку. В конце: сумма баллов, 3 главных совета и как переписать самый слабый абзац.\n${GPT_STYLE}\n\n${src ? `Исходный текст или проблема:\n${src.slice(0, 6000)}` : 'Исходный текст не прикладываю - оцени К1-К3 по тому, что видно из сочинения.'}\n\nМоё сочинение (${wc} ${plural(wc, 'слово', 'слова', 'слов')}):\n${text}`;
+  },
+  ess: () => {
+    const d2 = state.draft2 || {}, text = String(d2.text || '').trim(), wc = words(text);
+    if (wc < 30) { toast('Сначала напиши сочинение'); return ''; }
+    return `Ты - опытный член комиссии по проверке итогового сочинения (11 класс, 2026/27 учебный год). Проверь моё сочинение строго, как на настоящей проверке.\nТребования: объём не меньше 250 слов (иначе «незачёт»), рекомендуется от 350; самостоятельность.\nКритерии: К1 соответствие теме; К2 привлечение литературного материала (хотя бы одно произведение, не пересказ, а анализ и вывод); К3 композиция и логика рассуждения; К4 качество письменной речи; К5 грамотность (не больше 5 ошибок на 100 слов). «Зачёт» за работу - если зачёт по К1 и К2 и ещё хотя бы по одному из К3-К5.\nПо каждому критерию: зачёт или незачёт и почему. Проверь факты по произведениям (автор, герои, события). Найди воду и повторы. Выпиши ошибки: как было → как правильно. Итог: зачёт или незачёт, 3 главных совета и как переписать самый слабый абзац.\n${GPT_STYLE}\n\nТема: ${d2.theme || '(не указана)'}\n\nСочинение (${wc} ${plural(wc, 'слово', 'слова', 'слов')}):\n${text}`;
+  },
+  para: () => {
+    const P = state.finPara || {}, t = finTopic(P.tid), w = finWork(P.wid), text = String(P.text || '').trim();
+    if (words(text) < 15) { toast('Сначала напиши абзац'); return ''; }
+    return `Ты - учитель литературы и член комиссии итогового сочинения. Проверь мой абзац-аргумент к теме:\n1) факты - верно ли названы автор, произведение, герои, события; назови конкретные ошибки, если они есть;\n2) доказывает ли абзац тему - есть ли конкретный эпизод, вывод и связь вывода с темой, нет ли пересказа без мысли;\n3) вода и повторы - что убрать или заменить;\n4) 2-3 совета и улучшенный вариант моего абзаца (сохрани мой эпизод и мою мысль).\n${GPT_STYLE}\n\nТема: ${t ? t.text : '-'}\nПроизведение: ${w ? finWorkName(w) : '-'}\n\nМой абзац:\n${text}`;
+  },
+  en: a => {
+    const s = enSec(a.dataset.id); if (!s) return '';
+    const text = String(state.enDrafts[s.id]?.text || '').trim(), wc = words(text), lim = GPT_EN_LIM[s.id] || [s.min, s.max];
+    if (wc < 20) { toast('Сначала напиши текст'); return ''; }
+    return `Ты - эксперт ЕГЭ по английскому языку. Проверь моё задание ${s.nums} строго по критериям ФИПИ 2026: ${GPT_EN_CRIT[s.id] || s.crit.map(([id, n, m]) => `${id} ${n} (макс. ${m})`).join('; ')}\nПравила ФИПИ: если по К1 0 баллов - за всё задание 0; объём ${s.min}-${s.max} слов; меньше ${lim[0]} слов - 0 баллов за всё задание; если больше ${lim[1]} слов - проверяются только первые ${s.max} слов. Посчитай слова по правилам ФИПИ (программа насчитала примерно ${wc}).\nПо каждому критерию: балл и коротко почему. Выпиши все ошибки: как было → как правильно (по-английски) и правило по-русски в одну строку. Итог - сумма баллов. Потом 3 главных совета и исправленный вариант моего текста.\nКомментарии - по-русски, простыми словами.\n\nЗадание:\n${enTaskCur(s).q}\n\nМой текст:\n${text}`;
+  },
+  reports: () => {
+    const list = reportsWaiting(); if (!list.length) { toast('Все жалобы уже проверены'); return ''; }
+    return `${GPT_REPORTS_HEAD}\n\n${list.map(reportLine).join('\n\n')}`;
+  },
+  report: a => { const r = (state.reports || []).find(x => x.id === a.dataset.id); return r ? `${GPT_REPORTS_HEAD}\n\n${reportLine(r, 0)}` : ''; },
+};
+function gptManual(p) {
+  openSheet(`<h2 class="h2">Скопируй и вставь в ChatGPT</h2><p class="muted small" style="margin:0">Само не скопировалось: подержи палец на тексте → «Выбрать всё» → «Скопировать», потом открой ChatGPT и вставь.</p><textarea class="codebox" readonly>${esc(p)}</textarea><a class="btn primary block" href="${GPT_URL}" target="_blank" rel="noopener">Открыть ChatGPT</a><button class="btn block" data-a="closeSheet">Готово</button>`);
+}
+const gptMake = el => { const f = GPT_PROMPTS[el.dataset.gpt || el.dataset.k]; try { return f ? f(el) : ''; } catch { return ''; } };
+/* нажатие на «… в ChatGPT»: до перехода по ссылке - собрать запрос, вписать его в ссылку и скопировать */
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-gpt]'); if (!a) return;
+  const p = gptMake(a); if (!p) { e.preventDefault(); return; }
+  const q = encodeURIComponent(p), inUrl = q.length <= GPT_Q_MAX;
+  a.href = inUrl ? GPT_URL + '?q=' + q : GPT_URL;
+  const cb = navigator.clipboard;
+  if (!cb || !cb.writeText) { if (!inUrl) { e.preventDefault(); gptManual(p); } return; }
+  cb.writeText(p).then(() => {}, () => { if (!inUrl) gptManual(p); });
+  toast(inUrl ? 'Открываю ChatGPT - запрос уже там и ещё скопирован' : 'Запрос скопирован - в ChatGPT нажми в поле → «Вставить»');
+}, true);
+A.gptCopy = b => {
+  const p = gptMake(b); if (!p) return;
+  const cb = navigator.clipboard;
+  if (cb && cb.writeText) cb.writeText(p).then(() => toast('Скопировала - открой ChatGPT и вставь в поле сообщения'), () => gptManual(p));
+  else gptManual(p);
+};
+/* «Не поняла правило?» под теорией: свой вопрос (или пусто - «объясни с нуля») уходит в ChatGPT вместе с темой */
+const theoryAskHTML0 = theoryAskHTML;
+theoryAskHTML = function () {
+  if (caps.sample) return theoryAskHTML0();
+  return `<section class="card"><h2 class="h2">Не поняла правило?</h2><p class="muted small" style="margin:0">Спроси ChatGPT: объяснит другими словами, разберёт твой пример и даст задания на проверку. Впиши вопрос - или оставь поле пустым, тогда объяснит тему с нуля.</p>
+    <input class="inp" id="gptQ" placeholder="Например: почему тут НН?" style="font-size:16px;padding:12px 14px" maxlength="300" autocomplete="off">
+    ${gptA('theory', 'Спросить ChatGPT', 'btn violet block')}${GPT_NOTE}</section>`;
+};
+A.weakExplain = b => { // «Объясни с нуля» у темы в «Подтянуть»: теория темы и сразу поле «Спросить ChatGPT»
+  go(weakTheoryRoute(b.dataset.k));
+  if (caps.sample) { askTheory(EXPLAIN0, true); return; }
+  setTimeout(() => { const q = document.getElementById('gptQ'); if (!q) return; q.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  toast('Внизу теории - «Спросить ChatGPT»: объяснит с нуля');
+};
+/* английский 37 и 38: писать можно по заданию из программы или по любому образцу ФИПИ из тренировки */
+function enTaskList(s) {
+  const own = { id: '', name: 'Задание из программы', q: s.task };
+  const cards = (TASK_ITEMS['en:' + s.id] || []).map(getItem).filter(it => it && it.type === 'card' && /^en-e3[78]-/.test(it.id)).map((it, i) => {
+    const friend = (it.q.match(/pen-?friend,? (\w+)/i) || [])[1], topic = (it.q.match(/project on ([^.]+)\./i) || [])[1];
+    const src = (it.q.match(/^Задание [\d.]+ \(([^)]+)\)/) || [])[1] || 'образец ФИПИ';
+    return { id: it.id, name: `${i + 1}. ${friend ? `Письмо ${friend}` : topic ? topic.replace(/^why /, 'Why ').slice(0, 58) : 'Задание'} · ${src}`, q: it.q };
+  });
+  return [own, ...cards];
+}
+const enTaskCur = s => { const list = enTaskList(s), tid = state.enDrafts[s.id]?.tid || ''; return list.find(t => t.id === tid) || list[0]; };
+function enTaskHTML(s) {
+  const list = enTaskList(s), cur = enTaskCur(s);
+  return `<div class="kicker">Задание</div>${list.length > 1 ? `<select class="inp" id="enTaskSel" data-id="${esc(s.id)}" style="font-size:16px">${list.map(t => `<option value="${esc(t.id)}" ${t.id === cur.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>` : ''}<p style="margin:0;line-height:1.6;white-space:pre-line">${esc(cur.q)}</p>`;
+}
+document.addEventListener('change', e => {
+  if (e.target.id !== 'enTaskSel') return;
+  const sid = e.target.dataset.id, d = state.enDrafts[sid] = state.enDrafts[sid] || {};
+  d.tid = e.target.value; save(); render();
+});
+
+/* ---- жалобы «Здесь ошибка?»: без Claude их проверяет ChatGPT, а она отмечает его ответ (r.g = { ok, d }).
+   Если ChatGPT подтвердил ошибку - задание убирается из тренировок и из «Ошибок» (пока Claude его не исправит).
+   Ответы Claude приходят с обновлением приложения (tools/report-checks.json -> REPORT_CHECKS) и важнее ответа ChatGPT ---- */
 function reportVerdict(r) {
   if (!r) return null;
   const c = REPORT_CHECKS[r.id];
   // ответ - на жалобы, поданные до проверки; если она с ответом не согласилась (after), нужен ответ новее
   if (c && (!r.d || r.d <= c.d) && (!r.after || c.d > r.after)) return { ok: !!c.ok, why: c.why || '', d: c.d };
   if (r.v) return { ok: !!r.v.ok, why: [r.v.why, r.v.fix].filter(Boolean).join(' '), d: r.v.d }; // проверка в версии в Claude
+  if (r.g) return { ok: !!r.g.ok, why: '', d: r.g.d, gpt: true }; // её отметка: что ответил ChatGPT
   return null;
 }
 const reportsWaiting = () => (state.reports || []).filter(r => !reportVerdict(r));
+const reportsForClaude = () => (state.reports || []).filter(r => { const v = reportVerdict(r); return !v || v.gpt; });
+const gptHidden = {}; // id -> ключи TASK_ITEMS, откуда задание убрано (ChatGPT подтвердил ошибку)
+function gptHide(id) {
+  if (gptHidden[id]) return;
+  const keys = [];
+  for (const [k, arr] of Object.entries(TASK_ITEMS)) { const i = arr.indexOf(id); if (i >= 0) { arr.splice(i, 1); keys.push(k); } }
+  gptHidden[id] = keys;
+}
+function gptUnhide(id) { for (const k of gptHidden[id] || []) if (TASK_ITEMS[k] && !TASK_ITEMS[k].includes(id)) TASK_ITEMS[k].push(id); delete gptHidden[id]; }
+function gptHideSync() { // убранные задания - ровно те, где ChatGPT подтвердил ошибку (и при загрузке прогресса из копии)
+  for (const id of Object.keys(gptHidden)) gptUnhide(id);
+  for (const r of state.reports || []) { const v = reportVerdict(r); if (v && v.gpt && !v.ok) gptHide(r.id); }
+}
+gptHideSync();
+function gptUnmark(r) { // снять её отметку об ответе ChatGPT: задание возвращается, ошибка - тоже
+  if (!r || !r.g) return;
+  if (!r.g.ok) { gptUnhide(r.id); if (r.g.e && !state.errors[r.id]) state.errors[r.id] = r.g.e; }
+  delete r.g;
+}
 /* скопировать текст для чата с Claude; если буфер обмена недоступен - показать текст, чтобы скопировать руками */
 async function copyForClaude(t) {
   try { await navigator.clipboard.writeText(t); toast('Скопировала - вставь в чат с Claude'); }
   catch { openSheet(`<h2 class="h2">Скопируй и отправь Claude</h2><textarea class="codebox" readonly>${esc(t)}</textarea><button class="btn block" data-a="closeSheet">Готово</button>`); }
 }
 function reportsText() {
-  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 100» (офлайн-версия):\n' + reportsWaiting().map((r, i) => {
+  return 'Проверь мои жалобы на задания из приложения «ЕГЭ на 100» (офлайн-версия):\n' + reportsForClaude().map((r, i) => {
     const it = getItem(r.id);
-    return `${i + 1}. [${r.id}] ${it ? `${itemLabel(it)} - ${questionText(it)}` : 'задание не найдено'}${it && it.o && it.type !== 'stress' ? `\n   Варианты: ${it.o.join(' | ')}` : ''}\n   Мой ответ: ${r.my || '-'} · ответ программы: ${it ? correctText(it) : '-'} · ${r.d || ''}${r.after ? ` · повторно: не согласна с ответом от ${r.after}` : ''}`;
+    return `${i + 1}. [${r.id}] ${it ? `${itemLabel(it)} - ${questionText(it)}` : 'задание не найдено'}${it && it.o && it.type !== 'stress' ? `\n   Варианты: ${it.o.join(' | ')}` : ''}\n   Мой ответ: ${r.my || '-'} · ответ программы: ${it ? correctText(it) : '-'} · ${r.d || ''}${r.after ? ` · повторно: не согласна с ответом от ${r.after}` : ''}${r.g ? ` · ChatGPT: ${r.g.ok ? 'в задании всё верно' : 'в задании ошибка (задание убрано из тренировок)'}` : ''}`;
   }).join('\n');
 }
 function reportsCardHTML() {
   const n = (state.reports || []).length, w = reportsWaiting().length;
-  return `<section class="card"><div class="row sb"><h2 class="h2">Жалобы на задания</h2><span class="kicker">${n ? (w ? `ждут проверки: ${w}` : 'все проверены') : 'нет'}</span></div><p class="muted small" style="margin:0">Всё, где ты нажала «Здесь ошибка?», и ответ Claude по каждой жалобе.</p><button class="btn block" data-a="openReports">Открыть жалобы</button></section>`;
+  return `<section class="card"><div class="row sb"><h2 class="h2">Жалобы на задания</h2><span class="kicker">${n ? (w ? `ждут проверки: ${w}` : 'все проверены') : 'нет'}</span></div><p class="muted small" style="margin:0">Всё, где ты нажала «Здесь ошибка?»: проверить в ChatGPT и посмотреть ответы.</p><button class="btn block" data-a="openReports">Открыть жалобы</button></section>`;
 }
 function vReports() {
-  const list = [...(state.reports || [])].sort((a, b) => String(b.d || '').localeCompare(String(a.d || ''))), wait = reportsWaiting().length;
+  const list = [...(state.reports || [])].sort((a, b) => String(b.d || '').localeCompare(String(a.d || ''))), wait = reportsWaiting().length, forC = reportsForClaude().length;
   const card = r => {
-    const it = getItem(r.id), v = reportVerdict(r);
-    const [col, st] = v ? (v.ok ? ['var(--good)', 'Проверено: в задании всё верно'] : ['var(--violet)', 'Проверено: ты права - в задании была ошибка, исправлено']) : ['var(--gold)', 'Ждёт проверки'];
+    const it = getItem(r.id), v = reportVerdict(r), id = esc(r.id);
+    const [col, st] = !v ? ['var(--gold)', 'Ждёт проверки']
+      : v.gpt ? (v.ok ? ['var(--good)', 'ChatGPT: в задании всё верно'] : ['var(--violet)', 'ChatGPT: в задании ошибка - задание убрано из тренировок'])
+      : v.ok ? ['var(--good)', 'Проверено: в задании всё верно'] : ['var(--violet)', 'Проверено: ты права - в задании была ошибка, исправлено'];
+    const act = !v ? `<div class="row" style="gap:8px">${gptA('report', 'Спросить ChatGPT', 'btn sm violet', ` data-id="${id}"`)}</div>
+      <div class="muted small">Что ответил ChatGPT?</div><div class="row" style="gap:8px"><button class="btn sm" data-a="gptMark" data-id="${id}" data-ok="1">Всё верно</button><button class="btn sm ghost" data-a="gptMark" data-id="${id}" data-ok="0">В задании ошибка</button></div>`
+      : v.gpt ? `<button class="linkbtn" data-a="gptUnmark" data-id="${id}">Отменить отметку</button>` : '';
     return `<div class="err" style="border-left-color:${col}"><div class="kicker">${it ? esc(itemLabel(it)) : 'Задание'}${r.d ? ' · ' + fmtD(r.d) : ''}</div>
-      <div class="q">${it ? esc(questionText(it)) : `Этого задания (${esc(r.id)}) больше нет в программе`}</div>
+      <div class="q">${it ? esc(questionText(it)) : `Этого задания (${id}) больше нет в программе`}</div>
       <div class="small">${r.my ? `Твой ответ: <b>${esc(r.my)}</b>` : ''}${r.my && it ? ' · ' : ''}${it ? `ответ программы: <b>${esc(correctText(it))}</b>` : ''}</div>
-      <div class="small" style="font-weight:800;color:${col}">${st}</div>${v && v.why ? `<div class="small exp" style="line-height:1.55">${fmtRich(v.why, false)}</div>` : ''}</div>`;
+      <div class="small" style="font-weight:800;color:${col}">${st}</div>${v && v.why ? `<div class="small exp" style="line-height:1.55">${fmtRich(v.why, false)}</div>` : ''}${act}</div>`;
   };
   return `${ui.stack.length ? `<button class="back" data-a="back">${ic('left', 18)} Назад</button>` : ''}
-  <header class="stack" style="gap:6px"><div class="kicker">Здесь ошибка?</div><h1 class="h1">Жалобы на задания</h1><p class="muted" style="margin:0">Здесь всё, где ты нажала «Здесь ошибка?». Без интернета задания никто не проверяет сам: когда будет связь, скопируй жалобы и отправь их Claude. Claude проверит по правилам ФИПИ, исправит ошибки, и после обновления приложения у каждой жалобы появится ответ.</p></header>
+  <header class="stack" style="gap:6px"><div class="kicker">Здесь ошибка?</div><h1 class="h1">Жалобы на задания</h1><p class="muted" style="margin:0">Здесь всё, где ты нажала «Здесь ошибка?». Проверь жалобы в ChatGPT - он разберёт каждое задание по правилам ФИПИ. Потом отметь его ответ: если в задании ошибка, задание уберётся из тренировок и из «Ошибок». Когда вернёшься к Claude - скопируй жалобы и отправь: исправлю задания в самом приложении.</p></header>
   <section class="card"><div class="row sb"><div><div class="big">${wait}</div><div class="muted small">ждут проверки</div></div><div style="text-align:right"><div class="big" style="color:var(--good)">${list.length - wait}</div><div class="muted small">проверено</div></div></div>
-    ${wait ? `<button class="btn primary block" data-a="copyReports">Скопировать для Claude: ${wait}</button>` : `<p class="muted small" style="margin:0">${list.length ? 'Все жалобы проверены.' : 'Жалоб пока нет. Если в задании что-то не так - после ответа нажми «Здесь ошибка?».'}</p>`}</section>
+    ${wait ? gptA('reports', `Проверить в ChatGPT: ${wait}`) + GPT_NOTE : `<p class="muted small" style="margin:0">${list.length ? 'Все жалобы проверены.' : 'Жалоб пока нет. Если в задании что-то не так - после ответа нажми «Здесь ошибка?».'}</p>`}
+    ${forC ? `<button class="btn sm ghost" data-a="copyReports">Скопировать для Claude: ${forC}</button>` : ''}</section>
   ${list.length ? `<section class="stack">${list.map(card).join('')}</section>` : ''}`;
 }
-askHTML = function (it) { // в офлайне: только жалоба и её статус (вопросов к Claude нет)
+askHTML = function (it) { // после ответа: «Спросить ChatGPT» про это задание и жалоба «Здесь ошибка?» с её статусом
   const r0 = state.reports?.find(r => r.id === it.id), v = reportVerdict(r0);
   const rep = !r0 ? '<button class="btn sm ghost" data-a="report">Здесь ошибка?</button>'
-    : v ? `<span class="muted small">${v.ok ? 'Проверено: в задании всё верно' : 'Проверено: ошибка в задании исправлена'}</span><button class="btn sm ghost" data-a="reportAgain">Всё равно ошибка?</button>`
+    : v && v.gpt && !v.ok ? '<span class="muted small">ChatGPT: в задании ошибка - задание убрано из тренировок</span>'
+    : v ? `<span class="muted small">${v.gpt ? 'ChatGPT: в задании всё верно' : v.ok ? 'Проверено: в задании всё верно' : 'Проверено: ошибка в задании исправлена'}</span><button class="btn sm ghost" data-a="reportAgain">Всё равно ошибка?</button>`
     : '<span class="muted small">Жалоба записана - ждёт проверки</span>';
-  return `<p class="muted small" style="margin:0">В офлайн-версии вопросов к Claude нет - смотри разбор и теорию выше.</p><div class="row">${rep}<button class="linkbtn" data-a="openReports">Жалобы →</button></div>`;
+  return `<div class="row" style="gap:8px">${gptA('item', 'Спросить ChatGPT', 'btn sm violet', ` data-id="${esc(it.id)}"`)}${rep}<button class="linkbtn" data-a="openReports">Жалобы →</button></div>`;
 };
 const weakErrLink0 = weakErrLink;
 weakErrLink = () => { // в «Ошибках» рядом с «Подтянуть» и «Избранным» - ссылка на жалобы
@@ -432,21 +586,19 @@ Object.assign(A, {
   openGifts: () => go({ v: 'gifts' }),
   openReports: () => { closeSheet(); go({ v: 'reports' }); },
   copyReports: () => copyForClaude(reportsText()),
-  copyEssay: () => {
-    const d2 = state.draft2, text = String(d2.text || '').trim(); if (words(text) < 30) { toast('Сначала напиши сочинение'); return; }
-    copyForClaude(`Проверь моё итоговое сочинение как член комиссии: зачёт или нет по критериям К1-К5, где вода и повторы, какие слова заменить и как сказать точнее.\nТема: ${d2.theme || '(не указана)'}\n\nСочинение (${words(text)} слов):\n${text}`);
+  gptMark: b => { // её отметка, что ответил ChatGPT на жалобу
+    const r = (state.reports || []).find(x => x.id === b.dataset.id); if (!r) return;
+    const ok = b.dataset.ok === '1'; r.g = { ok, d: today() };
+    if (!ok) { if (state.errors[r.id]) { r.g.e = state.errors[r.id]; delete state.errors[r.id]; } gptHide(r.id); }
+    save(); render(); toast(ok ? 'Отметила: в задании всё верно' : 'Отметила: задание убрано из тренировок и из «Ошибок»');
   },
-  copyPara: () => {
-    const P = state.finPara || {}, t = finTopic(P.tid), w = finWork(P.wid), text = String(P.text || '').trim();
-    if (words(text) < 15) { toast('Сначала напиши абзац'); return; }
-    copyForClaude(`Проверь мой абзац-аргумент для итогового сочинения: верны ли факты, доказывает ли он тему, где вода и повторы, как сказать точнее.\nТема: ${t ? t.text : '-'}\nПроизведение: ${w ? finWorkName(w) : '-'}\n\n${text}`);
-  },
+  gptUnmark: b => { gptUnmark((state.reports || []).find(x => x.id === b.dataset.id)); save(); render(); toast('Отметка снята - жалоба снова ждёт проверки'); },
   finParaNew: () => { finParaNext(); render(); },
   finParaMine: () => { finParaNext(); finRemember('write'); go({ v: 'final', sub: 'write', part: 'para' }); },
   reportAgain: () => { // ответ уже был, но она всё ещё видит ошибку - жалоба снова ждёт проверки
     const id = ses?.ids?.[ses.i], r = id && state.reports?.find(x => x.id === id); if (!r) return;
     const c = REPORT_CHECKS[id]; if (c) r.after = c.d;
-    r.d = today(); r.my = String(ses.last?.my || r.my || '').slice(0, 60); delete r.v;
+    r.d = today(); r.my = String(ses.last?.my || r.my || '').slice(0, 60); delete r.v; gptUnmark(r);
     save(); render(); toast('Записала - жалоба снова ждёт проверки');
   },
   reload: () => location.reload(),
@@ -486,14 +638,14 @@ Object.assign(A, {
   importYes: () => {
     const s = pendingImp; if (!s) return; pendingImp = null;
     try { localStorage.setItem(LS + '.before', JSON.stringify({ d: today(), json: JSON.stringify(state) })); } catch {}
-    state = s; state.importedAt = today(); ses = null; save();
+    state = s; state.importedAt = today(); ses = null; save(); gptHideSync();
     closeSheet(); ui.tab = 'home'; ui.stack = []; ui.route = { v: 'home' }; render(); window.scrollTo(0, 0);
     toast('Готово: прогресс загружен');
   },
   importUndo: () => {
     const b = beforeImport(), s = b && parseState(b.json); if (!s) return;
     try { localStorage.removeItem(LS + '.before'); } catch {}
-    state = s; ses = null; save(); render(); toast('Вернула прогресс, который был до загрузки');
+    state = s; ses = null; save(); gptHideSync(); render(); toast('Вернула прогресс, который был до загрузки');
   },
 });
 { const t0 = A.finTab, w0 = A.finWork; A.finTab = b => { finRemember(b.dataset.s); t0(b); }; A.finWork = b => { finRemember('works'); w0(b); }; }
