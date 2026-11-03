@@ -628,8 +628,31 @@ for (const [tid, add] of Object.entries(SOC_ADD)) {
   t.theory = [...(t.theory || []), ...add.theory];
   for (const it of add.items) if (!ITEMS[it.id]) addItem('soc:' + tid, { exc: false, ...it, subj: 'soc', task: tid });
 }
+/* обществознание по навигатору и методичке ФИПИ-2026 (tools/content/soc-ege.js): тема «Как устроен ЕГЭ» первой,
+   в разделы 1-5 - теория по кодификатору-2026 и задания в форматах ЕГЭ (её просьба 03.11.2026) */
+if (!SOC_TOPICS.some(t => t.id === SOC_EGE_TOPIC.id)) {
+  SOC_TOPICS.push(SOC_EGE_TOPIC);
+  for (const it of SOC_EGE_TOPIC.items) if (!ITEMS[it.id]) addItem('soc:' + SOC_EGE_TOPIC.id, { exc: false, ...it, subj: 'soc', task: SOC_EGE_TOPIC.id });
+}
+for (const [tid, add] of Object.entries(SOC_EGE_ADD)) {
+  const t = SOC_TOPICS.find(x => x.id === tid); if (!t) continue;
+  t.theory = [...(t.theory || []), ...add.theory];
+  for (const it of add.items) if (!ITEMS[it.id]) addItem('soc:' + tid, { exc: false, ...it, subj: 'soc', task: tid });
+}
 { const pos = id => { const i = SOC_ORDER_IDS.indexOf(id); return i < 0 ? SOC_ORDER_IDS.length : i; }; SOC_TOPICS.sort((a, b) => pos(a.id) - pos(b.id)); }
 for (const [sec, items] of Object.entries(EN_ADD)) for (const it of items) if (!ITEMS[it.id]) addItem('en:' + sec, { exc: false, ...it, subj: 'en', task: sec });
+
+/* ---- английский по навигатору и методичке ФИПИ-2026 (tools/content/en-ege.js; её просьба 03.11.2026):
+   теория в разделы, задания 19-36 в формате ЕГЭ, письмо 37 и эссе 38 - карточки с заданием и образцом,
+   на экране «Английский» - задания открытого банка ФИПИ из навигатора ---- */
+for (const [sec, blocks] of Object.entries(EN_THEORY_ADD)) { const s = enSec(sec); if (s) s.theory = [...(s.theory || []), ...blocks]; }
+for (const [sec, items] of Object.entries(EN_ADD2)) for (const it of items) if (!ITEMS[it.id]) addItem('en:' + sec, { exc: false, ...it, subj: 'en', task: sec });
+const enBankHTML = () => {
+  const link = (k, c) => `https://ege.fipi.ru/bank/index.php?proj=${EN_PROJ}&${k}=${c}`;
+  return `<section class="card"><h2 class="h2">Задания ФИПИ из навигатора</h2><p class="muted small" style="margin:0">Настоящие задания открытого банка ФИПИ, которые советует навигатор-2026. Нужен интернет; аудирование - со звуком. Целый вариант решай за 3 ч 10 мин, без словаря.</p>
+    ${EN_BANK.map(([t, kind, codes]) => `<div class="blk"><div class="small" style="font-weight:800">${esc(t)}</div><div class="row" style="gap:6px">${(kind === 'mix' ? codes : codes.map(c => [kind, c])).map(([k, c], i) => `<a class="btn sm" href="${link(k, c)}" target="_blank" rel="noopener">${i + 1}</a>`).join('')}</div></div>`).join('')}</section>`;
+};
+{ const vEn0 = vEn; vEn = function () { return vEn0() + enBankHTML(); }; }
 
 /* ---- значок «ЕГЭ на 100» на iPhone (её просьба 01.11.2026: «хочу, чтобы сама иконка была 100»).
    iPhone запоминает значок при установке, а у каждого установленного значка своё хранилище.
