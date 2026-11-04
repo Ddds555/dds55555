@@ -79,3 +79,5 @@ details.more[open]>summary{margin-bottom:16px}
 .isteps b{font-weight:800}
 /* «Проверить» рядом с полем ответа - слово не рвём */
 .qcard form .btn{overflow-wrap:normal;white-space:nowrap;flex:none}
+/* вопрос с переносами строк (задание 15 из файла, карточки 37/38): формулировка и текст - отдельными строками */
+.qtext{white-space:pre-line}
