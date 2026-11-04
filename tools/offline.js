@@ -345,11 +345,15 @@ async function importText(text) {
    файл-пакет с ответами и разбором, она загружает его в «Мои данные» (как копию прогресса), а приложение хранит его
    только на этом устройстве (localStorage, LS + '.pack:' + id) и при каждом запуске добавляет задания в обычные темы
    (ruE:N) - они идут в тренировки, «как на ЕГЭ», марафоны и орфографию дня. Ответы на них - в обычном прогрессе.
-   Формат файла: { kind: 'ege100-pack', id, title, short, v, made, items: [{ id, v, task, type, q, o, a, ex, long? }] } */
+   Формат файла: { kind: 'ege100-pack', id, title, short, v, made, items: [{ id, v, task, type, q, o, a, ex, long?, text? }],
+   texts?: { id: { title, s: [предложения или абзацы] } } } - тексты к заданиям 1-3 и 23-26 показываются как у встроенных
+   заданий (свёрнутый блок с номерами), задание ссылается на свой текст полем text. */
 const PACK_KEY = LS + '.pack:';
 const PACKS = {}; // id -> { id, title, short, v, made, n, vars: [номера вариантов], tasks: [номера заданий] }
 function packApply(p) {
   if (!p || p.kind !== 'ege100-pack' || !p.id || !Array.isArray(p.items)) return false;
+  if (p.texts && typeof p.texts === 'object') for (const [k, t] of Object.entries(p.texts))
+    if (t && Array.isArray(t.s) && t.s.length && !RU_TEXTS[k] && !EN_TEXTS[k]) RU_TEXTS[k] = { title: String(t.title || 'Текст'), s: t.s.map(String) };
   for (const it of p.items) if (it && it.id && it.task && !ITEMS[it.id]) addItem('ruE:' + it.task, { exam: true, ...it, subj: 'ru', pk: p.id });
   const its = p.items.filter(it => it && ITEMS[it.id]);
   PACKS[p.id] = { id: p.id, title: p.title || 'Задания из файла', short: p.short || p.title || 'из файла', v: p.v || 1, made: p.made || '', n: its.length,
@@ -443,8 +447,8 @@ const gptSubj = it => it.subj === 'soc' ? 'обществознанию' : it.su
 function gptItemText(it, my = '', ok = null) {
   const opts = it.type === 'match' ? `\nВарианты справа: ${it.right.map((r, j) => `${j + 1}) ${r}`).join('; ')}`
     : it.type === 'choice' || (it.type === 'multi' && isLong(it)) ? `\nВарианты:\n${it.o.map((o, i) => `${i + 1}) ${o}`).join('\n')}` : '';
-  const ex = explainOf(it), exc = excNoteOf(it);
-  return `${itemLabel(it)}\nЗадание: ${questionText(it)}${opts}${my ? `\nМой ответ: ${my}${ok === true ? ' (программа засчитала)' : ok === false ? ' (программа не засчитала)' : ''}` : ''}\nОтвет программы: ${correctText(it)}${ex ? `\nПояснение программы: ${ex}` : ''}${exc ? `\nПометка программы: ${exc.exc ? 'исключение - ' : ''}${exc.t}` : ''}`;
+  const ex = explainOf(it), exc = excNoteOf(it), T = textOf(it); // задание по тексту: текст целиком (длинный запрос уйдёт через буфер)
+  return `${itemLabel(it)}${T ? `\nТекст «${T.title}»:\n${T.s.map((s, i) => `(${i + 1}) ${s}`).join(' ')}` : ''}\nЗадание: ${questionText(it)}${opts}${my ? `\nМой ответ: ${my}${ok === true ? ' (программа засчитала)' : ok === false ? ' (программа не засчитала)' : ''}` : ''}\nОтвет программы: ${correctText(it)}${ex ? `\nПояснение программы: ${ex}` : ''}${exc ? `\nПометка программы: ${exc.exc ? 'исключение - ' : ''}${exc.t}` : ''}`;
 }
 const GPT_ESS27 = 'К1 позиция автора по указанной проблеме (макс. 1);\nК2 комментарий к позиции автора: 2 примера-иллюстрации из текста с пояснениями, смысловая связь между ними и её анализ (макс. 3);\nК3 моё отношение к позиции автора и обоснование примером-аргументом - конкретным (если книга - с автором и названием) и не повторяющим суждения автора исходного текста (макс. 2);\nК4 фактологическая точность речи (макс. 1); К5 логичность речи (макс. 2); К6 соблюдение этических норм (макс. 1);\nК7 орфография (макс. 3); К8 пунктуация (макс. 3); К9 грамматика (макс. 3); К10 речевые нормы (макс. 3).\nВсего 22 балла. Объём - не меньше 150 слов.';
 const GPT_EN_CRIT = {
