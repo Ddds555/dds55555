@@ -404,7 +404,13 @@ vData = function () {
 };
 /* ответ в разборе для заданий из файла: номера, как в бланке ЕГЭ */
 const correctText0 = correctText;
-correctText = function (it) { if (it && it.pk && it.type === 'multi') return it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного'; return correctText0(it); };
+correctText = function (it) {
+  if (it && it.pk && it.type === 'multi') return it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного';
+  if (it && it.type === 'match' && it.alt) return it.a.map((r, i) => `${LET[i]}-${r + 1}${it.alt[i]?.length ? ` (или ${it.alt[i].map(j => j + 1).join(', ')})` : ''}`).join(', ');
+  return correctText0(it);
+};
+/* соответствие (8, 22): в заданиях из книг во фрагменте бывает два средства из списка - тогда второе в it.alt[буква] тоже засчитывается */
+function matchOk(it, i, j) { return it.a[i] === j || !!(it.alt && it.alt[i] && it.alt[i].includes(j)); }
 Object.assign(A, {
   openPack: b => go({ v: 'pack', id: b.dataset.id }),
   packVar: b => {

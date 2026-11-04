@@ -44,6 +44,12 @@ BACK = '<button class="back" data-a="back">${ic(\'left\', 18)} Назад</butto
 
 # (что меняем, было, стало)
 PATCHES = [
+    ('соответствие: второй допустимый ответ (it.alt) засчитывается и подсвечивается зелёным',
+     "const cls = fb ? (it.a[i] === j ? 'good' : on ? 'bad' : '') : on ? 'on' : '';",
+     "const cls = fb ? (it.a[i] === j || (on && matchOk(it, i, j)) ? 'good' : on ? 'bad' : '') : on ? 'on' : '';"),
+    ('соответствие: подсчёт верных букв с учётом it.alt',
+     'const n = it.a.filter((r, i) => ms[i] === r).length;',
+     'const n = it.a.filter((r, i) => matchOk(it, i, ms[i])).length;'),
     ('вкладка «Сочинение» вместо «Подарков» (подарки - с карточки «Копилка» на главной)',
      "const TABS = [['home', 'Сегодня', 'home'], ['ru', 'Русский', 'book'], ['soc', 'Общество', 'scale'], ['en', 'English', 'globe'], ['err', 'Ошибки', 'note'], ['gifts', 'Подарки', 'gift']];",
      "const TABS = [['home', 'Сегодня', 'home'], ['final', 'Сочинение', 'pen'], ['ru', 'Русский', 'book'], ['soc', 'Общество', 'scale'], ['en', 'English', 'globe'], ['err', 'Ошибки', 'note']];"),
