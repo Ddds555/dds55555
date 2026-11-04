@@ -340,6 +340,8 @@ details.more[open]>summary{margin-bottom:16px}
 .isteps b{font-weight:800}
 /* «Проверить» рядом с полем ответа - слово не рвём */
 .qcard form .btn{overflow-wrap:normal;white-space:nowrap;flex:none}
+/* вопрос с переносами строк (задание 15 из файла, карточки 37/38): формулировка и текст - отдельными строками */
+.qtext{white-space:pre-line}
 </style>
 </head>
 <body>
@@ -347,7 +349,7 @@ details.more[open]>summary{margin-bottom:16px}
 <nav id="tabs" aria-label="Разделы"></nav>
 <div id="toast" role="status" hidden></div>
 <div id="sheetWrap" hidden><div id="sheet" role="dialog" aria-modal="true"></div></div>
-<script>window.EGE_BUILD = {"version": "39337a03cc", "content": "2026-10-25", "source": "1792689980-1d59"};</script>
+<script>window.EGE_BUILD = {"version": "3edefa1723", "content": "2026-10-25", "source": "1792689980-1d59"};</script>
 <script>
 'use strict';
 try { if (!document.documentElement.lang) document.documentElement.lang = 'ru'; } catch {} // переносы длинных слов в заголовках (hyphens:auto) - только с языком страницы
@@ -3045,7 +3047,7 @@ function render() {
   const r = ui.route; let h = '';
   try {
     h = r.v === 'home' ? vHome() : r.v === 'ru' ? vRu() : r.v === 'soc' ? vSoc() : r.v === 'err' ? vErr() : r.v === 'gifts' ? vGifts()
-      : r.v === 'task' ? vTask(r) : r.v === 'topic' ? vTopic(r) : r.v === 'ses' ? vSes() : r.v === 'final' ? vFinal(r) : r.v === 'plan' ? vPlan() : r.v === 'en' ? vEn() : r.v === 'ensec' ? vEnSec(r) : r.v === 'exc' ? vExc() : r.v === 'weak' ? vWeak() : r.v === 'fav' ? vFav() : r.v === 'data' ? vData() : r.v === 'reports' ? vReports() : vHome();
+      : r.v === 'task' ? vTask(r) : r.v === 'topic' ? vTopic(r) : r.v === 'ses' ? vSes() : r.v === 'final' ? vFinal(r) : r.v === 'plan' ? vPlan() : r.v === 'en' ? vEn() : r.v === 'ensec' ? vEnSec(r) : r.v === 'exc' ? vExc() : r.v === 'weak' ? vWeak() : r.v === 'fav' ? vFav() : r.v === 'data' ? vData() : r.v === 'reports' ? vReports() : r.v === 'pack' ? vPack(r) : vHome();
   } catch (e) { console.error(e); h = `<div class="card"><b>Что-то сломалось при показе.</b><p class="muted">${esc(e.message)}</p><button class="btn" data-a="tab" data-t="home">На главную</button></div>`; }
   $('#view').innerHTML = h; renderTabs(); fitH1();
   const inp = $('#ans'); if (inp) inp.focus({ preventScroll: true });
@@ -5969,6 +5971,86 @@ async function importText(text) {
     <p class="muted small" style="margin:0">Прогресс на этом устройстве заменится копией. Если передумаешь - «Вернуть как было» в «Моих данных».</p>
     <div class="row"><button class="btn primary" data-a="importYes">${ic('check', 18)} Загрузить</button><button class="btn" data-a="closeSheet">Отмена</button></div>`);
 }
+/* ================= Задания из её файлов (личный пакет заданий) =================
+   Варианты из книг и сборников, которые она присылает, на сайт не выкладываем (это чужие книги): Claude делает из них
+   файл-пакет с ответами и разбором, она загружает его в «Мои данные» (как копию прогресса), а приложение хранит его
+   только на этом устройстве (localStorage, LS + '.pack:' + id) и при каждом запуске добавляет задания в обычные темы
+   (ruE:N) - они идут в тренировки, «как на ЕГЭ», марафоны и орфографию дня. Ответы на них - в обычном прогрессе.
+   Формат файла: { kind: 'ege100-pack', id, title, short, v, made, items: [{ id, v, task, type, q, o, a, ex, long? }] } */
+const PACK_KEY = LS + '.pack:';
+const PACKS = {}; // id -> { id, title, short, v, made, n, vars: [номера вариантов], tasks: [номера заданий] }
+function packApply(p) {
+  if (!p || p.kind !== 'ege100-pack' || !p.id || !Array.isArray(p.items)) return false;
+  for (const it of p.items) if (it && it.id && it.task && !ITEMS[it.id]) addItem('ruE:' + it.task, { exam: true, ...it, subj: 'ru', pk: p.id });
+  const its = p.items.filter(it => it && ITEMS[it.id]);
+  PACKS[p.id] = { id: p.id, title: p.title || 'Задания из файла', short: p.short || p.title || 'из файла', v: p.v || 1, made: p.made || '', n: its.length,
+    vars: [...new Set(its.map(x => x.v).filter(Boolean))].sort((a, b) => a - b), tasks: [...new Set(its.map(x => x.task))].sort((a, b) => a - b) };
+  return true;
+}
+(() => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(PACK_KEY)) { try { packApply(JSON.parse(localStorage.getItem(k))); } catch {} } } } catch {} })();
+const packItems = id => Object.values(ITEMS).filter(it => it.pk === id);
+const packIds = (id, filt) => packItems(id).filter(filt).sort((a, b) => (a.v - b.v) || (a.task - b.task)).map(it => it.id);
+const packTaskList = ts => { const r = []; for (const t of ts) { const l = r[r.length - 1]; if (l && l[1] === t - 1) l[1] = t; else r.push([t, t]); } return r.map(([a, b]) => a === b ? a : `${a}-${b}`).join(', '); };
+/* загрузка: тот же «Выбрать файл» / «Вставить копию текстом», что и для копии прогресса */
+const importText0 = importText;
+importText = async function (text) {
+  let o = null; try { o = JSON.parse(await unpackText(text)); } catch {}
+  if (!o || o.kind !== 'ege100-pack') return importText0(text);
+  if (!o.id || !Array.isArray(o.items) || !o.items.length) { toast('Файл с заданиями повреждён'); return; }
+  const had = PACKS[o.id];
+  try { localStorage.setItem(PACK_KEY + o.id, JSON.stringify(o)); }
+  catch { toast('Не хватает места на устройстве для этого файла'); return; }
+  try { localStorage.setItem(LS + '.packMsg', JSON.stringify({ id: o.id, t: `${had ? 'Задания обновлены' : 'Задания загружены'}: ${o.items.length}` })); } catch {}
+  closeSheet(); location.reload(); // заново со всеми заданиями - так обновлённый файл полностью заменяет старый
+};
+function packRuCard() {
+  const ps = Object.values(PACKS); if (!ps.length) return '';
+  return ps.map(p => `<section class="card" style="border-left:5px solid var(--rose)"><div class="row sb"><h2 class="h2">${esc(p.title)}</h2><span class="kicker">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')}</span></div>
+    <p class="muted small" style="margin:0">Из твоего файла: ${p.vars.length} ${plural(p.vars.length, 'вариант', 'варианта', 'вариантов')}, задания ${packTaskList(p.tasks)} с ответами и разбором. Решай вариант целиком или одно задание из всех вариантов.</p>
+    <button class="btn primary block" data-a="openPack" data-id="${esc(p.id)}">${ic('play', 18)} Открыть варианты</button></section>`).join('');
+}
+function vPack(r) {
+  const p = PACKS[r.id] || Object.values(PACKS)[0]; if (!p) return vRu();
+  const st = ids => { const ok = ids.filter(id => itemStatus(id) === 'ok').length, seen = ids.filter(id => itemStatus(id) !== 'new').length; return { ok, seen, n: ids.length }; };
+  const taskBtns = p.tasks.map(t => { const s = st(packIds(p.id, it => it.task === t)); return `<button class="btn sm ${s.seen && s.ok === s.n ? 'gold' : ''}" data-a="packTask" data-id="${esc(p.id)}" data-t="${t}">${t}<span class="muted small" style="margin-left:4px">${s.ok}/${s.n}</span></button>`; }).join('');
+  const rows = p.vars.map(n => { const ids = packIds(p.id, it => it.v === n), s = st(ids);
+    return `<button class="trow" data-a="packVar" data-id="${esc(p.id)}" data-n="${n}"><span class="tnum">${n}</span><span style="min-width:0"><span class="ttl">Вариант ${n}</span><br><span class="tmeta">${s.seen ? `решено ${s.seen} из ${s.n} · верно ${s.ok}` : `задания ${packTaskList([...new Set(ids.map(id => ITEMS[id].task))])}`}</span></span><span class="pts num">${s.ok}/${s.n}</span></button>`; }).join('');
+  return `<button class="back" data-a="back">${ic('left', 18)} Назад</button>
+  <header class="stack" style="gap:6px"><div class="kicker">Из твоего файла · только на этом устройстве</div><h1 class="h1">${esc(p.title)}</h1><p class="muted" style="margin:0">Вариант целиком - задания по порядку, как на экзамене. Или одно задание из всех вариантов подряд - так быстрее набить руку на слабом месте. Ответы и разбор - после каждого задания; ошибки идут в красную тетрадь.</p></header>
+  <section class="card"><h2 class="h2">Одно задание из всех вариантов</h2><div class="row" style="gap:8px">${taskBtns}</div></section>
+  <section class="stack"><div class="kicker">Варианты</div>${rows}</section>`;
+}
+const vRu0 = vRu;
+vRu = function () { const h = vRu0(), c = packRuCard(); if (!c) return h; const i = h.indexOf('</header>'); return i < 0 ? c + h : h.slice(0, i + 9) + c + h.slice(i + 9); };
+const vData0p = vData;
+vData = function () {
+  const ps = Object.values(PACKS);
+  const card = `<section class="card"><h2 class="h2">Задания из файлов</h2><p class="muted small" style="margin:0">${ps.length ? 'Загружены на этом устройстве (в копию прогресса не входят - файл с заданиями храни у себя):' : 'Файл с заданиями (например, варианты из сборника), который прислал Claude, загружается так же: «Выбрать файл» выше.'}</p>
+    ${ps.map(p => `<div class="row sb"><span><b>${esc(p.title)}</b><br><span class="muted small">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')} · версия ${p.v}${p.made ? ' от ' + esc(fmtD(p.made)) : ''}</span></span><button class="btn sm ghost" data-a="packDel" data-id="${esc(p.id)}">Убрать</button></div>`).join('')}</section>`;
+  return vData0p() + card;
+};
+/* ответ в разборе для заданий из файла: номера, как в бланке ЕГЭ */
+const correctText0 = correctText;
+correctText = function (it) { if (it && it.pk && it.type === 'multi') return it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного'; return correctText0(it); };
+Object.assign(A, {
+  openPack: b => go({ v: 'pack', id: b.dataset.id }),
+  packVar: b => {
+    const p = PACKS[b.dataset.id], n = +b.dataset.n, ids = p ? packIds(p.id, it => it.v === n) : [];
+    if (!ids.length) { toast('В этом варианте пока нет заданий'); return; }
+    ses = { sid: uid(), title: `Вариант ${n} · ${p.short}`, pool: ids, n: ids.length, ids: [...ids], i: 0, okN: 0, got: 0, newErr: 0, phase: 'q', sel: [], last: null, pack: p.id };
+    sesGo();
+  },
+  packTask: b => { const p = PACKS[b.dataset.id], t = +b.dataset.t; if (!p) return; startPool(`Задание ${t} · ${p.short}`, packIds(p.id, it => it.task === t), 10, { key: 'ruE:' + t }); },
+  packDel: b => { const p = PACKS[b.dataset.id]; if (!p) return; openSheet(`<h2 class="h2">Убрать «${esc(p.title)}»?</h2><p class="muted small" style="margin:0">Задания из файла пропадут с этого устройства. Твои ответы на них останутся, а файл можно загрузить снова.</p><div class="row"><button class="btn primary" data-a="packDelYes" data-id="${esc(p.id)}">Убрать</button><button class="btn" data-a="closeSheet">Отмена</button></div>`); },
+  packDelYes: b => { try { localStorage.removeItem(PACK_KEY + b.dataset.id); localStorage.setItem(LS + '.packMsg', JSON.stringify({ t: 'Задания из файла убраны' })); } catch {} closeSheet(); location.reload(); },
+});
+/* после загрузки файла приложение перезапускается: показать, что получилось, и открыть варианты */
+setTimeout(() => {
+  let m = null; try { m = JSON.parse(localStorage.getItem(LS + '.packMsg') || 'null'); localStorage.removeItem(LS + '.packMsg'); } catch {}
+  if (!m) return;
+  if (m.id && PACKS[m.id]) { setTab('ru'); go({ v: 'pack', id: m.id }); }
+  toast(m.t);
+}, 0);
 /* ================= ChatGPT вместо Claude (03.11.2026: подписка на Claude заканчивается, у неё есть ChatGPT Plus) =================
    Кнопка «… в ChatGPT» - ссылка на chatgpt.com. По нажатию собираем запрос (задание и её ответ, сочинение и критерии ФИПИ-2026),
    копируем его в буфер и, если он помещается в ссылку, передаём как ?q= - ChatGPT сразу его отправит.
