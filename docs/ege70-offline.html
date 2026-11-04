@@ -347,7 +347,7 @@ details.more[open]>summary{margin-bottom:16px}
 <nav id="tabs" aria-label="Разделы"></nav>
 <div id="toast" role="status" hidden></div>
 <div id="sheetWrap" hidden><div id="sheet" role="dialog" aria-modal="true"></div></div>
-<script>window.EGE_BUILD = {"version": "c73ac6abe4", "content": "2026-10-25", "source": "1792689980-1d59"}; window.EGE_SINGLE = true;</script>
+<script>window.EGE_BUILD = {"version": "3f582fe896", "content": "2026-10-25", "source": "1792689980-1d59"}; window.EGE_SINGLE = true;</script>
 <script>
 'use strict';
 try { if (!document.documentElement.lang) document.documentElement.lang = 'ru'; } catch {} // переносы длинных слов в заголовках (hyphens:auto) - только с языком страницы
@@ -3876,8 +3876,8 @@ function vSes() {
   if (it.type === 'stress') q = `<p class="qhint">Нажми на ударную гласную${it.h ? ` · в значении <b>«${esc(it.w.toLowerCase() + ' ' + it.h)}»</b>` : ''}</p>${stressWord(it, ses.phase, L?.pick)}`;
   else if (it.type === 'choice') q = `<p class="qtext">${esc(it.q)}</p><div class="stack" style="gap:10px">${it.o.map((o, i) => { const cls = fb ? (i === it.a ? 'good' : i === L.pick ? 'bad' : '') : ''; return `<button class="opt ${cls}" data-a="choose" data-i="${i}" ${fb ? 'disabled' : ''}>${esc(o)}</button>`; }).join('')}</div>`;
   else if (it.type === 'input') q = `<p class="qtext">${esc(it.q)}</p>${fb ? '' : `<form class="row" style="flex-wrap:nowrap" data-f="ans"><input class="inp" id="ans" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Ответ"><button class="btn primary">Проверить</button></form>`}`;
-  else if (it.type === 'multi' && isLong(it)) q = `<p class="qtext">${esc(it.q)}</p><p class="qhint">Можно выбрать несколько вариантов.</p><div class="stack" style="gap:8px">${it.o.map((o, i) => { const on = ses.sel.includes(i); const cls = fb ? (it.a.includes(i) ? 'good' : on ? 'bad' : '') : on ? 'on' : ''; return `<button class="ropt ${cls}" data-a="dig" data-i="${i}" ${fb ? 'disabled' : ''} aria-pressed="${on}"><span class="rn">${i + 1}</span><span>${esc(o)}</span></button>`; }).join('')}</div>${fb ? '' : `<button class="btn primary block" data-a="checkMulti">Проверить</button>`}`;
-  else if (it.type === 'multi') { const hint = it.task === 15 || String(it.id).startsWith('h15') ? 'Выбери цифры, на месте которых пишется НН.' : it.task === 21 ? 'Выбери номера предложений с одним и тем же правилом.' : 'Выбери цифры, где нужны запятые. Если не нужны нигде - просто нажми «Проверить».'; q = `<p class="qtext">${markText(it.q)}</p><p class="qhint">${hint}</p><div class="digs">${it.o.map((o, i) => { const on = ses.sel.includes(i); const cls = fb ? (it.a.includes(i) ? 'good' : on ? 'bad' : '') : on ? 'on' : ''; return `<button class="dig ${cls}" data-a="dig" data-i="${i}" ${fb ? 'disabled' : ''} aria-pressed="${on}">${esc(o)}</button>`; }).join('')}</div>${fb ? '' : `<button class="btn primary block" data-a="checkMulti">Проверить</button>`}`; }
+  else if (it.type === 'multi' && isLong(it)) q = `<p class="qtext">${esc(it.q)}</p><p class="qhint">Можно выбрать несколько вариантов.</p><div class="stack" style="gap:8px">${it.o.map((o, i) => { const on = ses.sel.includes(i); const cls = fb ? (multiGood(it).includes(i) ? 'good' : on ? 'bad' : '') : on ? 'on' : ''; return `<button class="ropt ${cls}" data-a="dig" data-i="${i}" ${fb ? 'disabled' : ''} aria-pressed="${on}"><span class="rn">${i + 1}</span><span>${esc(o)}</span></button>`; }).join('')}</div>${fb ? '' : `<button class="btn primary block" data-a="checkMulti">Проверить</button>`}`;
+  else if (it.type === 'multi') { const hint = it.task === 15 || String(it.id).startsWith('h15') ? 'Выбери цифры, на месте которых пишется НН.' : it.task === 21 ? 'Выбери номера предложений с одним и тем же правилом.' : 'Выбери цифры, где нужны запятые. Если не нужны нигде - просто нажми «Проверить».'; q = `<p class="qtext">${markText(it.q)}</p><p class="qhint">${hint}</p><div class="digs">${it.o.map((o, i) => { const on = ses.sel.includes(i); const cls = fb ? (multiGood(it).includes(i) ? 'good' : on ? 'bad' : '') : on ? 'on' : ''; return `<button class="dig ${cls}" data-a="dig" data-i="${i}" ${fb ? 'disabled' : ''} aria-pressed="${on}">${esc(o)}</button>`; }).join('')}</div>${fb ? '' : `<button class="btn primary block" data-a="checkMulti">Проверить</button>`}`; }
   else if (it.type === 'match') { const ms = ses.msel || {}; q = `<p class="qtext">${esc(it.q)}</p><div class="mright">${it.right.map((r, j) => `<div><b class="sn">${j + 1})</b> ${esc(r)}</div>`).join('')}</div><div>${it.left.map((l, i) => `<div class="mrow"><div class="ml">${LET[i]}) ${esc(l)}</div><div class="mchips">${it.right.map((r, j) => { const on = ms[i] === j; const cls = fb ? (it.a[i] === j || (on && matchOk(it, i, j)) ? 'good' : on ? 'bad' : '') : on ? 'on' : ''; return `<button class="mchip ${cls}" data-a="mpick" data-i="${i}" data-j="${j}" ${fb ? 'disabled' : ''} aria-pressed="${on}" aria-label="${LET[i]} - ${j + 1}">${j + 1}</button>`; }).join('')}</div></div>`).join('')}</div>${fb ? '' : `<button class="btn primary block" data-a="checkMatch">Проверить</button>`}`; }
   else if (it.type === 'card') q = `<p class="qtext">${esc(it.q)}</p>${fb ? '' : ses.reveal ? `<div class="ai"><b>Ответ:</b> ${esc(it.a)}${it.why ? `<br>${md(it.why)}` : ''}</div><div class="row" style="flex-wrap:nowrap"><button class="btn block" data-a="self" data-ok="0">${ic('x', 18)} Не вспомнила</button><button class="btn primary block" data-a="self" data-ok="1">${ic('check', 18)} Вспомнила</button></div>` : `<button class="btn block" data-a="reveal">Показать ответ</button>`}`;
   let fbh = '';
@@ -4057,7 +4057,7 @@ ${text.slice(0, 3000)}`;
   letter: b => { const it = getItem(ses.ids[ses.i]), i = +b.dataset.i, si = stressIdx(it.w); const my = [...it.w.toLowerCase()].map((c, j) => j === i ? c.toUpperCase() : c).join(''); answer(i === si, my, i); },
   choose: b => { const it = getItem(ses.ids[ses.i]), i = +b.dataset.i; answer(i === it.a, it.o[i], i); },
   dig: b => { const i = +b.dataset.i; ses.sel = ses.sel.includes(i) ? ses.sel.filter(x => x !== i) : [...ses.sel, i]; render(); },
-  checkMulti: () => { const it = getItem(ses.ids[ses.i]); const a = [...it.a].sort().join(','), s = [...ses.sel].sort().join(','); answer(a === s, ses.sel.length ? ses.sel.map(i => it.o[i]).sort().join(', ') : 'без запятых'); },
+  checkMulti: () => { const it = getItem(ses.ids[ses.i]); const a = [...it.a].sort().join(','), s = [...ses.sel].sort().join(','); answer(a === s || multiGood(it) !== it.a, ses.sel.length ? ses.sel.map(i => it.o[i]).sort().join(', ') : 'без запятых'); },
   reveal: () => { ses.reveal = true; render(); },
   self: b => { ses.reveal = false; const it = getItem(ses.ids[ses.i]); answer(b.dataset.ok === '1', b.dataset.ok === '1' ? '' : 'не вспомнила'); },
   next: () => {
@@ -6034,12 +6034,16 @@ vData = function () {
 /* ответ в разборе для заданий из файла: номера, как в бланке ЕГЭ */
 const correctText0 = correctText;
 correctText = function (it) {
-  if (it && it.pk && it.type === 'multi') return it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного';
+  if (it && it.pk && it.type === 'multi') return (it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного')
+    + (it.altA?.length ? ` (засчитывается и ${it.altA.map(x => x.map(i => i + 1).join('')).join(' или ')})` : '');
   if (it && it.type === 'match' && it.alt) return it.a.map((r, i) => `${LET[i]}-${r + 1}${it.alt[i]?.length ? ` (или ${it.alt[i].map(j => j + 1).join(', ')})` : ''}`).join(', ');
   return correctText0(it);
 };
 /* соответствие (8, 22): в заданиях из книг во фрагменте бывает два средства из списка - тогда второе в it.alt[буква] тоже засчитывается */
 function matchOk(it, i, j) { return it.a[i] === j || !!(it.alt && it.alt[i] && it.alt[i].includes(j)); }
+/* несколько ответов (21 и др.): в заданиях из книг бывает спорная трактовка (например, все ли части сложного предложения - одно
+   правило). Тогда it.altA - другие допустимые наборы; если выбран один из них, он и считается верным и подсвечивается */
+function multiGood(it) { const s = [...((ses && ses.sel) || [])].sort().join(','); return (it.altA || []).find(x => [...x].sort().join(',') === s) || it.a; }
 Object.assign(A, {
   openPack: b => go({ v: 'pack', id: b.dataset.id }),
   packVar: b => {

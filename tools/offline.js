@@ -405,12 +405,16 @@ vData = function () {
 /* ответ в разборе для заданий из файла: номера, как в бланке ЕГЭ */
 const correctText0 = correctText;
 correctText = function (it) {
-  if (it && it.pk && it.type === 'multi') return it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного';
+  if (it && it.pk && it.type === 'multi') return (it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного')
+    + (it.altA?.length ? ` (засчитывается и ${it.altA.map(x => x.map(i => i + 1).join('')).join(' или ')})` : '');
   if (it && it.type === 'match' && it.alt) return it.a.map((r, i) => `${LET[i]}-${r + 1}${it.alt[i]?.length ? ` (или ${it.alt[i].map(j => j + 1).join(', ')})` : ''}`).join(', ');
   return correctText0(it);
 };
 /* соответствие (8, 22): в заданиях из книг во фрагменте бывает два средства из списка - тогда второе в it.alt[буква] тоже засчитывается */
 function matchOk(it, i, j) { return it.a[i] === j || !!(it.alt && it.alt[i] && it.alt[i].includes(j)); }
+/* несколько ответов (21 и др.): в заданиях из книг бывает спорная трактовка (например, все ли части сложного предложения - одно
+   правило). Тогда it.altA - другие допустимые наборы; если выбран один из них, он и считается верным и подсвечивается */
+function multiGood(it) { const s = [...((ses && ses.sel) || [])].sort().join(','); return (it.altA || []).find(x => [...x].sort().join(',') === s) || it.a; }
 Object.assign(A, {
   openPack: b => go({ v: 'pack', id: b.dataset.id }),
   packVar: b => {
