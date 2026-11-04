@@ -360,7 +360,48 @@ function packApply(p) {
     vars: [...new Set(its.map(x => x.v).filter(Boolean))].sort((a, b) => a - b), tasks: [...new Set(its.map(x => x.task))].sort((a, b) => a - b) };
   return true;
 }
-(() => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(PACK_KEY)) { try { packApply(JSON.parse(localStorage.getItem(k))); } catch {} } } } catch {} })();
+/* Хранилище пакетов - IndexedDB. Файл с вариантами весит мегабайты, а у localStorage лимит ~5 МБ на сайт, и там должен
+   всегда помещаться прогресс (localSave молча пропускает запись, если места нет). Старые пакеты из localStorage при
+   запуске переносятся в IndexedDB; если IndexedDB недоступна (редко), пакеты остаются в localStorage, как раньше. */
+const PACK_DB = 'ege100-packs';
+function packIdb(mode, fn) {
+  return new Promise((res, rej) => {
+    let done = false;
+    const fin = (f, v) => { if (!done) { done = true; clearTimeout(timer); f(v); } };
+    const timer = setTimeout(() => fin(rej, new Error('IndexedDB не отвечает')), 4000);
+    let rq; try { rq = indexedDB.open(PACK_DB, 1); } catch (e) { return fin(rej, e); }
+    rq.onupgradeneeded = () => { try { rq.result.createObjectStore('packs'); } catch {} };
+    rq.onerror = () => fin(rej, rq.error);
+    rq.onsuccess = () => {
+      const db = rq.result; let out;
+      try {
+        const tx = db.transaction('packs', mode);
+        fn(tx.objectStore('packs'), v => { out = v; });
+        tx.oncomplete = () => { db.close(); fin(res, out); };
+        tx.onerror = tx.onabort = () => { db.close(); fin(rej, tx.error); };
+      } catch (e) { db.close(); fin(rej, e); }
+    };
+  });
+}
+const packIdbAll = () => packIdb('readonly', (st, set) => { const r = st.getAll(); r.onsuccess = () => set(r.result || []); });
+const packIdbPut = (id, text) => packIdb('readwrite', st => st.put(text, id));
+const packIdbDel = id => packIdb('readwrite', st => st.delete(id));
+const packLsKeys = () => { const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(PACK_KEY)) ks.push(k); } } catch {} return ks; };
+const packsReady = (async () => {
+  let saved = [];
+  try {
+    for (const k of packLsKeys()) { const v = localStorage.getItem(k); if (v) await packIdbPut(k.slice(PACK_KEY.length), v); localStorage.removeItem(k); }
+    saved = await packIdbAll();
+  } catch {}
+  for (const t of saved) { try { packApply(JSON.parse(t)); } catch {} }
+  for (const k of packLsKeys()) { try { packApply(JSON.parse(localStorage.getItem(k))); } catch {} } // если IndexedDB недоступна
+})();
+/* первый экран рисуется, когда задания из файлов уже загружены (доли секунды); если хранилище молчит 4,5 с - без них */
+function startAfterPacks(fn) {
+  let ran = false; const once = () => { if (!ran) { ran = true; fn(); } };
+  packsReady.then(() => { if (!ran) once(); else if (Object.keys(PACKS).length) safeRender(); }, once); // опоздали - дорисовать с заданиями
+  setTimeout(once, 4500);
+}
 const packItems = id => Object.values(ITEMS).filter(it => it.pk === id);
 const packIds = (id, filt) => packItems(id).filter(filt).sort((a, b) => (a.v - b.v) || (a.task - b.task)).map(it => it.id);
 const packTaskList = ts => { const r = []; for (const t of ts) { const l = r[r.length - 1]; if (l && l[1] === t - 1) l[1] = t; else r.push([t, t]); } return r.map(([a, b]) => a === b ? a : `${a}-${b}`).join(', '); };
@@ -370,9 +411,11 @@ importText = async function (text) {
   let o = null; try { o = JSON.parse(await unpackText(text)); } catch {}
   if (!o || o.kind !== 'ege100-pack') return importText0(text);
   if (!o.id || !Array.isArray(o.items) || !o.items.length) { toast('Файл с заданиями повреждён'); return; }
-  const had = PACKS[o.id];
-  try { localStorage.setItem(PACK_KEY + o.id, JSON.stringify(o)); }
-  catch { toast('Не хватает места на устройстве для этого файла'); return; }
+  const had = PACKS[o.id], json = JSON.stringify(o);
+  let ok = false;
+  try { await packIdbPut(o.id, json); ok = true; try { localStorage.removeItem(PACK_KEY + o.id); } catch {} } catch {}
+  if (!ok) { try { localStorage.setItem(PACK_KEY + o.id, json); ok = true; } catch {} }
+  if (!ok) { toast('Не хватает места на устройстве для этого файла'); return; }
   try { localStorage.setItem(LS + '.packMsg', JSON.stringify({ id: o.id, t: `${had ? 'Задания обновлены' : 'Задания загружены'}: ${o.items.length}` })); } catch {}
   closeSheet(); location.reload(); // заново со всеми заданиями - так обновлённый файл полностью заменяет старый
 };
@@ -404,7 +447,17 @@ vData = function () {
 };
 /* ответ в разборе для заданий из файла: номера, как в бланке ЕГЭ */
 const correctText0 = correctText;
-correctText = function (it) { if (it && it.pk && it.type === 'multi') return it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного'; return correctText0(it); };
+correctText = function (it) {
+  if (it && it.pk && it.type === 'multi') return (it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного')
+    + (it.altA?.length ? ` (засчитывается и ${it.altA.map(x => x.map(i => i + 1).join('')).join(' или ')})` : '');
+  if (it && it.type === 'match' && it.alt) return it.a.map((r, i) => `${LET[i]}-${r + 1}${it.alt[i]?.length ? ` (или ${it.alt[i].map(j => j + 1).join(', ')})` : ''}`).join(', ');
+  return correctText0(it);
+};
+/* соответствие (8, 22): в заданиях из книг во фрагменте бывает два средства из списка - тогда второе в it.alt[буква] тоже засчитывается */
+function matchOk(it, i, j) { return it.a[i] === j || !!(it.alt && it.alt[i] && it.alt[i].includes(j)); }
+/* несколько ответов (21 и др.): в заданиях из книг бывает спорная трактовка (например, все ли части сложного предложения - одно
+   правило). Тогда it.altA - другие допустимые наборы; если выбран один из них, он и считается верным и подсвечивается */
+function multiGood(it) { const s = [...((ses && ses.sel) || [])].sort().join(','); return (it.altA || []).find(x => [...x].sort().join(',') === s) || it.a; }
 Object.assign(A, {
   openPack: b => go({ v: 'pack', id: b.dataset.id }),
   packVar: b => {
@@ -415,15 +468,15 @@ Object.assign(A, {
   },
   packTask: b => { const p = PACKS[b.dataset.id], t = +b.dataset.t; if (!p) return; startPool(`Задание ${t} · ${p.short}`, packIds(p.id, it => it.task === t), 10, { key: 'ruE:' + t }); },
   packDel: b => { const p = PACKS[b.dataset.id]; if (!p) return; openSheet(`<h2 class="h2">Убрать «${esc(p.title)}»?</h2><p class="muted small" style="margin:0">Задания из файла пропадут с этого устройства. Твои ответы на них останутся, а файл можно загрузить снова.</p><div class="row"><button class="btn primary" data-a="packDelYes" data-id="${esc(p.id)}">Убрать</button><button class="btn" data-a="closeSheet">Отмена</button></div>`); },
-  packDelYes: b => { try { localStorage.removeItem(PACK_KEY + b.dataset.id); localStorage.setItem(LS + '.packMsg', JSON.stringify({ t: 'Задания из файла убраны' })); } catch {} closeSheet(); location.reload(); },
+  packDelYes: async b => { const id = b.dataset.id; try { await packIdbDel(id); } catch {} try { localStorage.removeItem(PACK_KEY + id); localStorage.setItem(LS + '.packMsg', JSON.stringify({ t: 'Задания из файла убраны' })); } catch {} closeSheet(); location.reload(); },
 });
-/* после загрузки файла приложение перезапускается: показать, что получилось, и открыть варианты */
-setTimeout(() => {
+/* после загрузки файла приложение перезапускается: показать, что получилось, и открыть варианты (после первого экрана) */
+packsReady.finally(() => setTimeout(() => {
   let m = null; try { m = JSON.parse(localStorage.getItem(LS + '.packMsg') || 'null'); localStorage.removeItem(LS + '.packMsg'); } catch {}
   if (!m) return;
   if (m.id && PACKS[m.id]) { setTab('ru'); go({ v: 'pack', id: m.id }); }
   toast(m.t);
-}, 0);
+}, 60));
 /* ================= ChatGPT вместо Claude (03.11.2026: подписка на Claude заканчивается, у неё есть ChatGPT Plus) =================
    Кнопка «… в ChatGPT» - ссылка на chatgpt.com. По нажатию собираем запрос (задание и её ответ, сочинение и критерии ФИПИ-2026),
    копируем его в буфер и, если он помещается в ссылку, передаём как ?q= - ChatGPT сразу его отправит.
