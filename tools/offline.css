@@ -1,4 +1,17 @@
 /* офлайн-версия: тест по произведению, мои данные, обновление приложения */
+/* ===== Шрифт (04.11.2026: «нормальный шрифт сделать») - системный: на iPhone это San Francisco, как во всех приложениях.
+   Unbounded и Manrope больше не грузятся. Насыщенность как в iOS: текст обычный, заголовки и кнопки полужирные
+   (800 в стилях сборщик заменяет на 700, см. tools/build.py). ===== */
+:root{--display:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--body:var(--display)}
+body{font-weight:400}
+.h1{font-size:30px;line-height:1.15;letter-spacing:-.02em;-webkit-hyphens:manual;hyphens:manual;overflow-wrap:break-word}
+.h2{font-weight:700;letter-spacing:-.01em}
+.kicker{font-size:12.5px;letter-spacing:.06em}
+.qtext{font-weight:600;font-size:20px;line-height:1.45}
+.opt,.ropt{font-weight:500}
+.btn{font-weight:600}
+.ta{font-weight:400}
+.sheet-note h3{font-weight:700}
 .wq{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;color:var(--ink);line-height:1.35}
 .wq:last-child{border-bottom:0}
 .wq b{font-weight:800}
@@ -81,3 +94,20 @@ details.more[open]>summary{margin-bottom:16px}
 .qcard form .btn{overflow-wrap:normal;white-space:nowrap;flex:none}
 /* вопрос с переносами строк (задание 15 из файла, карточки 37/38): формулировка и текст - отдельными строками */
 .qtext{white-space:pre-line}
+/* ===== задания из файлов: вводный абзац, диаграмма картинкой, текст по обществознанию, часть 2 (развёрнутый ответ) ===== */
+.qpre{margin:0;font-size:17px;line-height:1.55;white-space:pre-line}
+.qimg{margin:0;background:#fff;border-radius:14px;padding:8px;border:1.5px solid var(--line);overflow-x:auto}
+.qimg{cursor:zoom-in}
+.qimg img{display:block;max-width:100%;height:auto;margin:0 auto}
+.qimg figcaption{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px;color:#7a6a72;font-size:13px}
+.qzoom{overflow:auto;-webkit-overflow-scrolling:touch;background:#fff;border-radius:14px;border:1.5px solid var(--line);max-height:70vh}
+.qzoom img{display:block;width:min(1300px,200vw);max-width:none;height:auto}
+.txtbody.plain{gap:10px}
+.txtbody.plain p{text-indent:1.2em}
+.txtbody.plain p.tsrc{text-indent:0;text-align:right;color:var(--muted);font-size:15px;font-style:italic}
+.qopen{margin:0;white-space:pre-line;line-height:1.55;font-size:17px}
+.qopen.small{font-size:15px}
+.openmy{background:var(--paper-2);border-radius:16px;padding:12px 14px;display:grid;gap:4px}
+.openmy p{margin:0;white-space:pre-line;line-height:1.55}
+.openmodel{white-space:pre-line}
+.scoreb{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px}

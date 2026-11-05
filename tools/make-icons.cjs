@@ -6,7 +6,7 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const font = n => fs.readFileSync(path.join(ROOT, 'docs', 'fonts', n + '.woff2')).toString('base64');
+const font = n => fs.readFileSync(path.join(ROOT, 'tools', 'icon-fonts', n + '.woff2')).toString('base64');
 const ICONS = [
   // файл, размер, скругление, масштаб содержимого (у maskable - безопасная зона 80%)
   ['icon-192.png', 192, 0.22, 1],
