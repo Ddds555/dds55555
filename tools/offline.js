@@ -343,21 +343,46 @@ async function importText(text) {
 /* ================= Задания из её файлов (личный пакет заданий) =================
    Варианты из книг и сборников, которые она присылает, на сайт не выкладываем (это чужие книги): Claude делает из них
    файл-пакет с ответами и разбором, она загружает его в «Мои данные» (как копию прогресса), а приложение хранит его
-   только на этом устройстве (localStorage, LS + '.pack:' + id) и при каждом запуске добавляет задания в обычные темы
-   (ruE:N) - они идут в тренировки, «как на ЕГЭ», марафоны и орфографию дня. Ответы на них - в обычном прогрессе.
-   Формат файла: { kind: 'ege100-pack', id, title, short, v, made, items: [{ id, v, task, type, q, o, a, ex, long?, text? }],
-   texts?: { id: { title, s: [предложения или абзацы] } } } - тексты к заданиям 1-3 и 23-26 показываются как у встроенных
-   заданий (свёрнутый блок с номерами), задание ссылается на свой текст полем text. */
+   только на этом устройстве (IndexedDB, см. ниже) и при каждом запуске добавляет задания в обычные темы по номерам ЕГЭ:
+   русский - ruE:N, обществознание - socE:N. Они идут в тренировки, марафон ошибок и «Подтянуть»; ответы - в обычном прогрессе.
+   Формат файла: { kind: 'ege100-pack', id, subj: 'ru' | 'soc' (нет поля - русский), title, short, v, made,
+     tnames?: { N: 'что проверяет задание N' }, items: [...], texts?: { id: { title, s: [...], plain?, src? } } }
+   Задание: { id, v (вариант), task (номер ЕГЭ), type, q, o, a, ex, long?, text?, pre?, img?, pts?, th?, alt?, altA? }
+   - text - ссылка на текст: у русского к 1-3, 21 и 23-26 (предложения с номерами), у обществознания к 17-20 (plain: абзацы);
+   - pre - вводный абзац перед вопросом (ситуация, описание опроса); img - диаграмма или таблица картинкой (data:image/...);
+   - type 'open' - часть 2 с развёрнутым ответом: q - задание, a - элементы верного ответа (ФИПИ), crit - как оценивают,
+     pts - максимум баллов. Она пишет ответ, сверяет с образцом, ставит себе баллы, может отправить в ChatGPT на проверку;
+   - pts: 1 у соответствия за 1 балл (обществознание, задание 3); th - тема обществознания для теории (иначе SOC_TASK_TOPIC). */
 const PACK_KEY = LS + '.pack:';
-const PACKS = {}; // id -> { id, title, short, v, made, n, vars: [номера вариантов], tasks: [номера заданий] }
+const PACKS = {}; // id -> { id, subj, title, short, v, made, n, vars: [номера вариантов], tasks: [номера заданий], tnames }
+const PACK_TEXT_IDS = new Set(); // тексты из файлов: пробник по русскому берёт только встроенные (у пакетов тексты к 1-3 и 23-26 разные)
+const PACK_SUBJ = { ru: { key: 'ruE:', tab: 'ru' }, soc: { key: 'socE:', tab: 'soc' } };
+const packSubj = p => p && PACK_SUBJ[p.subj] ? p.subj : 'ru';
+/* ЕГЭ по обществознанию 2027 (сборник ФИПИ, 30 вариантов): что проверяет каждый номер и к какой теме теория */
+const SOC_TASK_NAMES = {
+  1: 'Понятия: два «лишних» термина', 2: 'Человек и общество: верные суждения', 3: 'Человек и общество: соответствие',
+  4: 'Понятия в ситуации (слайд, план, список)', 5: 'Экономика: верные суждения', 6: 'Экономика: соответствие', 7: 'Экономика: ситуация',
+  8: 'Социальная сфера: верные суждения', 9: 'Диаграмма или таблица', 10: 'Политика: верные суждения', 11: 'Политика: ситуация',
+  12: 'Конституция РФ: положения', 13: 'Конституция РФ: соответствие', 14: 'Право: верные суждения', 15: 'Право: соответствие',
+  16: 'Право: ситуация', 17: 'Текст: ответы по тексту', 18: 'Текст: понятие и объяснение', 19: 'Текст: примеры', 20: 'Текст: объяснения',
+  21: 'График спроса и предложения', 22: 'Задача-ситуация', 23: 'Конституция РФ: объясни характеристики', 24: 'Сложный план', 25: 'Обоснование, ответ на вопрос и примеры',
+};
+const SOC_TASK_TOPIC = { 2: 'man', 3: 'man', 5: 'econ', 6: 'econ', 7: 'econ', 8: 'social', 9: 'social', 10: 'polit', 11: 'polit', 12: 'law', 13: 'power', 14: 'law', 15: 'law', 16: 'law', 21: 'econ', 23: 'law', 24: 'ege', 25: 'ege' };
+const packTaskName = (p, t) => (p.tnames && p.tnames[t]) || (p.subj === 'soc' ? SOC_TASK_NAMES[t] : ruTask(+t)?.title) || '';
 function packApply(p) {
   if (!p || p.kind !== 'ege100-pack' || !p.id || !Array.isArray(p.items)) return false;
+  const sj = packSubj(p), TX = sj === 'soc' ? SOC_TEXTS : RU_TEXTS;
   if (p.texts && typeof p.texts === 'object') for (const [k, t] of Object.entries(p.texts))
-    if (t && Array.isArray(t.s) && t.s.length && !RU_TEXTS[k] && !EN_TEXTS[k]) RU_TEXTS[k] = { title: String(t.title || 'Текст'), s: t.s.map(String) };
-  for (const it of p.items) if (it && it.id && it.task && !ITEMS[it.id]) addItem('ruE:' + it.task, { exam: true, ...it, subj: 'ru', pk: p.id });
-  const its = p.items.filter(it => it && ITEMS[it.id]);
-  PACKS[p.id] = { id: p.id, title: p.title || 'Задания из файла', short: p.short || p.title || 'из файла', v: p.v || 1, made: p.made || '', n: its.length,
-    vars: [...new Set(its.map(x => x.v).filter(Boolean))].sort((a, b) => a - b), tasks: [...new Set(its.map(x => x.task))].sort((a, b) => a - b) };
+    if (t && Array.isArray(t.s) && t.s.length && !RU_TEXTS[k] && !EN_TEXTS[k] && !SOC_TEXTS[k]) {
+      TX[k] = { title: String(t.title || 'Текст'), s: t.s.map(String), plain: !!t.plain, src: t.src ? String(t.src) : '' };
+      PACK_TEXT_IDS.add(k);
+    }
+  for (const it of p.items) if (it && it.id && it.task && !ITEMS[it.id])
+    addItem(PACK_SUBJ[sj].key + it.task, { exam: true, ...it, subj: sj, pk: p.id, ...(sj === 'soc' ? { lbl: `Общество · задание ${it.task}` } : {}) });
+  const its = p.items.filter(it => it && ITEMS[it.id] && ITEMS[it.id].pk === p.id);
+  PACKS[p.id] = { id: p.id, subj: sj, title: p.title || 'Задания из файла', short: p.short || p.title || 'из файла', v: p.v || 1, made: p.made || '', n: its.length,
+    vars: [...new Set(its.map(x => x.v).filter(Boolean))].sort((a, b) => a - b), tasks: [...new Set(its.map(x => x.task))].sort((a, b) => a - b),
+    tnames: p.tnames && typeof p.tnames === 'object' ? p.tnames : {} };
   return true;
 }
 /* Хранилище пакетов - IndexedDB. Файл с вариантами весит мегабайты, а у localStorage лимит ~5 МБ на сайт, и там должен
@@ -419,37 +444,50 @@ importText = async function (text) {
   try { localStorage.setItem(LS + '.packMsg', JSON.stringify({ id: o.id, t: `${had ? 'Задания обновлены' : 'Задания загружены'}: ${o.items.length}` })); } catch {}
   closeSheet(); location.reload(); // заново со всеми заданиями - так обновлённый файл полностью заменяет старый
 };
-function packRuCard() {
-  const ps = Object.values(PACKS); if (!ps.length) return '';
-  return ps.map(p => `<section class="card" style="border-left:5px solid var(--rose)"><div class="row sb"><h2 class="h2">${esc(p.title)}</h2><span class="kicker">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')}</span></div>
-    <p class="muted small" style="margin:0">Из твоего файла: ${p.vars.length} ${plural(p.vars.length, 'вариант', 'варианта', 'вариантов')}, задания ${packTaskList(p.tasks)} с ответами и разбором. Решай вариант целиком или одно задание из всех вариантов.</p>
-    <button class="btn primary block" data-a="openPack" data-id="${esc(p.id)}">${ic('play', 18)} Открыть варианты</button></section>`).join('');
+/* карточка пакета на экране предмета (русский - на «Русском», обществознание - на «Обществе») */
+function packCards(sj) {
+  return Object.values(PACKS).filter(p => p.subj === sj).map(p => `<section class="card" style="border-left:5px solid var(--rose)"><div class="row sb"><h2 class="h2">${esc(p.title)}</h2><span class="kicker">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')}</span></div>
+    <p class="muted small" style="margin:0">Из твоего файла: ${p.vars.length} ${plural(p.vars.length, 'вариант', 'варианта', 'вариантов')}, задания ${packTaskList(p.tasks)} с ответами${sj === 'soc' && p.tasks.some(t => t > 16) ? ', часть 2 - с образцом ответа ФИПИ' : ' и разбором'}. Решай по номерам заданий, как на ЕГЭ, или вариант целиком.</p>
+    <button class="btn primary block" data-a="openPack" data-id="${esc(p.id)}">${ic('play', 18)} Открыть задания</button></section>`).join('');
 }
+const packInject = (h, c) => { if (!c) return h; const i = h.indexOf('</header>'); return i < 0 ? c + h : h.slice(0, i + 9) + c + h.slice(i + 9); };
 function vPack(r) {
   const p = PACKS[r.id] || Object.values(PACKS)[0]; if (!p) return vRu();
+  const sub = r.sub === 'var' ? 'var' : 'task';
   const st = ids => { const ok = ids.filter(id => itemStatus(id) === 'ok').length, seen = ids.filter(id => itemStatus(id) !== 'new').length; return { ok, seen, n: ids.length }; };
-  const taskBtns = p.tasks.map(t => { const s = st(packIds(p.id, it => it.task === t)); return `<button class="btn sm ${s.seen && s.ok === s.n ? 'gold' : ''}" data-a="packTask" data-id="${esc(p.id)}" data-t="${t}">${t}<span class="muted small" style="margin-left:4px">${s.ok}/${s.n}</span></button>`; }).join('');
-  const rows = p.vars.map(n => { const ids = packIds(p.id, it => it.v === n), s = st(ids);
-    return `<button class="trow" data-a="packVar" data-id="${esc(p.id)}" data-n="${n}"><span class="tnum">${n}</span><span style="min-width:0"><span class="ttl">Вариант ${n}</span><br><span class="tmeta">${s.seen ? `решено ${s.seen} из ${s.n} · верно ${s.ok}` : `задания ${packTaskList([...new Set(ids.map(id => ITEMS[id].task))])}`}</span></span><span class="pts num">${s.ok}/${s.n}</span></button>`; }).join('');
+  const taskRow = t => {
+    const s = st(packIds(p.id, it => it.task === t)), done = s.seen === s.n && s.ok === s.n;
+    return `<button class="trow" data-a="packTask" data-id="${esc(p.id)}" data-t="${t}"><span class="tnum ${done ? 'done' : ''}">${t}</span><span style="min-width:0"><span class="ttl">${esc(packTaskName(p, t) || 'Задание ' + t)}</span><br><span class="tmeta">${s.n} ${plural(s.n, 'задание', 'задания', 'заданий')} · ${s.seen ? `решено ${s.seen}, верно ${s.ok}` : 'ещё не решала'}</span></span><span class="pts num">${s.ok}/${s.n}</span></button>`;
+  };
+  const groups = p.subj === 'soc'
+    ? [['Часть 1 · ответ - цифры, проверка сразу', p.tasks.filter(t => t <= 16)], ['Часть 2 · развёрнутый ответ: пишешь и сверяешь с образцом ФИПИ', p.tasks.filter(t => t > 16)]]
+    : [['Задания по номерам', p.tasks]];
+  const tasksH = groups.filter(([, ts]) => ts.length).map(([h, ts]) => `<section class="stack"><div class="kicker">${esc(h)}</div>${ts.map(taskRow).join('')}</section>`).join('');
+  const varsH = `<section class="stack">${p.vars.map(n => { const ids = packIds(p.id, it => it.v === n), s = st(ids);
+    return `<button class="trow" data-a="packVar" data-id="${esc(p.id)}" data-n="${n}"><span class="tnum ${s.n && s.seen === s.n && s.ok === s.n ? 'done' : ''}">${n}</span><span style="min-width:0"><span class="ttl">Вариант ${n}</span><br><span class="tmeta">${s.seen ? `решено ${s.seen} из ${s.n} · верно ${s.ok}` : `задания ${packTaskList([...new Set(ids.map(id => ITEMS[id].task))])}`}</span></span><span class="pts num">${s.ok}/${s.n}</span></button>`; }).join('')}</section>`;
   return `<button class="back" data-a="back">${ic('left', 18)} Назад</button>
-  <header class="stack" style="gap:6px"><div class="kicker">Из твоего файла · только на этом устройстве</div><h1 class="h1">${esc(p.title)}</h1><p class="muted" style="margin:0">Вариант целиком - задания по порядку, как на экзамене. Или одно задание из всех вариантов подряд - так быстрее набить руку на слабом месте. Ответы и разбор - после каждого задания; ошибки идут в красную тетрадь.</p></header>
-  <section class="card"><h2 class="h2">Одно задание из всех вариантов</h2><div class="row" style="gap:8px">${taskBtns}</div></section>
-  <section class="stack"><div class="kicker">Варианты</div>${rows}</section>`;
+  <header class="stack" style="gap:6px"><div class="kicker">Из твоего файла · только на этом устройстве</div><h1 class="h1">${esc(p.title)}</h1><p class="muted" style="margin:0">По номерам - одно задание ЕГЭ из всех вариантов подряд: так быстрее набить руку. Вариант целиком - задания по порядку, как на экзамене. Ответ и разбор - сразу после задания, ошибки идут в красную тетрадь.</p></header>
+  <div class="seg" role="tablist">${[['task', 'По номерам'], ['var', `Варианты (${p.vars.length})`]].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" role="tab" aria-selected="${sub === k}" data-a="sub" data-s="${k}">${l}</button>`).join('')}</div>
+  ${sub === 'task' ? tasksH : varsH}`;
 }
 const vRu0 = vRu;
-vRu = function () { const h = vRu0(), c = packRuCard(); if (!c) return h; const i = h.indexOf('</header>'); return i < 0 ? c + h : h.slice(0, i + 9) + c + h.slice(i + 9); };
+vRu = function () { return packInject(vRu0(), packCards('ru')); };
+const vSoc0 = vSoc;
+vSoc = function () { return packInject(vSoc0(), packCards('soc')); };
 const vData0p = vData;
 vData = function () {
   const ps = Object.values(PACKS);
-  const card = `<section class="card"><h2 class="h2">Задания из файлов</h2><p class="muted small" style="margin:0">${ps.length ? 'Загружены на этом устройстве (в копию прогресса не входят - файл с заданиями храни у себя):' : 'Файл с заданиями (например, варианты из сборника), который прислал Claude, загружается так же: «Выбрать файл» выше.'}</p>
-    ${ps.map(p => `<div class="row sb"><span><b>${esc(p.title)}</b><br><span class="muted small">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')} · версия ${p.v}${p.made ? ' от ' + esc(fmtD(p.made)) : ''}</span></span><button class="btn sm ghost" data-a="packDel" data-id="${esc(p.id)}">Убрать</button></div>`).join('')}</section>`;
+  const card = `<section class="card"><h2 class="h2">Задания из файлов</h2><p class="muted small" style="margin:0">${ps.length ? 'Загружены на этом устройстве (в копию прогресса не входят - файлы с заданиями храни у себя):' : 'Файл с заданиями (например, варианты из сборника), который прислал Claude, загружается так же: «Выбрать файл» выше.'}</p>
+    ${ps.map(p => `<div class="row sb"><span><b>${esc(p.title)}</b><br><span class="muted small">${p.subj === 'soc' ? 'обществознание' : 'русский'} · ${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')} · версия ${p.v}${p.made ? ' от ' + esc(fmtD(p.made)) : ''}</span></span><button class="btn sm ghost" data-a="packDel" data-id="${esc(p.id)}">Убрать</button></div>`).join('')}</section>`;
   return vData0p() + card;
 };
 /* ответ в разборе для заданий из файла: номера, как в бланке ЕГЭ */
 const correctText0 = correctText;
 correctText = function (it) {
+  if (it && it.type === 'open') return ses && ses.phase === 'fb' && ses.ids && ses.ids[ses.i] === it.id ? 'образец ответа - выше' : String(it.a || '');
   if (it && it.pk && it.type === 'multi') return (it.a.length ? 'ответ ' + it.a.map(i => i + 1).join('') : 'ни одного')
     + (it.altA?.length ? ` (засчитывается и ${it.altA.map(x => x.map(i => i + 1).join('')).join(' или ')})` : '');
+  if (it && it.pk && it.type === 'match') return 'ответ ' + it.a.map(r => r + 1).join('') + ' (' + it.a.map((r, i) => `${LET[i]}-${r + 1}${it.alt?.[i]?.length ? ` или ${it.alt[i].map(j => j + 1).join(', ')}` : ''}`).join(', ') + ')';
   if (it && it.type === 'match' && it.alt) return it.a.map((r, i) => `${LET[i]}-${r + 1}${it.alt[i]?.length ? ` (или ${it.alt[i].map(j => j + 1).join(', ')})` : ''}`).join(', ');
   return correctText0(it);
 };
@@ -458,23 +496,71 @@ function matchOk(it, i, j) { return it.a[i] === j || !!(it.alt && it.alt[i] && i
 /* несколько ответов (21 и др.): в заданиях из книг бывает спорная трактовка (например, все ли части сложного предложения - одно
    правило). Тогда it.altA - другие допустимые наборы; если выбран один из них, он и считается верным и подсвечивается */
 function multiGood(it) { const s = [...((ses && ses.sel) || [])].sort().join(','); return (it.altA || []).find(x => [...x].sort().join(',') === s) || it.a; }
+/* текст задания: у обществознания (plain) - абзацы без номеров и автор; потом вводный абзац (pre) и картинка (img) */
+const PACK_IMG_RE = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const textHTML0 = textHTML;
+textHTML = function (it) {
+  const T = textOf(it);
+  const txt = T && T.plain ? `<details class="txt" data-d="txt" data-t="${esc(it.text)}" ${ses && ses.textOpen === it.text ? '' : 'open'}><summary>${esc(T.title || 'Текст')} - нажми, чтобы свернуть</summary><div class="txtbody plain">${T.s.map(x => `<p>${esc(x)}</p>`).join('')}${T.src ? `<p class="tsrc">${esc(T.src)}</p>` : ''}</div></details>` : textHTML0(it);
+  const pre = it.pre ? `<p class="qpre">${esc(it.pre)}</p>` : '';
+  const img = it.img && PACK_IMG_RE.test(it.img) ? `<figure class="qimg" data-a="imgZoom" data-id="${esc(it.id)}" role="button" aria-label="Увеличить диаграмму"><img src="${it.img}" alt="${esc(it.imgAlt || 'Диаграмма к заданию')}"><figcaption>${ic('plus', 14)} нажми, чтобы увеличить</figcaption></figure>` : '';
+  return txt + pre + img;
+};
+/* часть 2 (type 'open'): написать ответ → «Сверить с образцом» → баллы себе (0..pts) → разбор. Ответ хранится в ses.openTxt */
+function openHTML(it, fb) {
+  const max = it.pts || 2, my = String(ses.openTxt || '');
+  const task = `<p class="qopen">${esc(it.q)}</p>`;
+  if (!fb && !ses.reveal) return `${task}<textarea class="ta" id="openTa" placeholder="Напиши ответ, как на бланке. Можно коротко - главное, чтобы были все элементы." style="min-height:180px">${esc(my)}</textarea>
+    <button class="btn primary block" data-a="openShow">${ic('check', 18)} Сверить с образцом</button>
+    <p class="muted small" style="margin:0">Сначала напиши сама, потом открой образец ФИПИ и честно поставь себе баллы. Если сомневаешься - проверь в ChatGPT.</p>`;
+  const mine = my.trim() ? `<div class="openmy"><div class="kicker">Твой ответ</div><p>${esc(my)}</p></div>` : '';
+  const model = `<div class="ai openmodel"><b>Образец ответа (ФИПИ)</b>\n${esc(it.a || '')}</div>`;
+  const crit = it.crit ? `<details class="fbd"${fb ? '' : ' open'}><summary>Как оценивают: максимум ${max} ${plural(max, 'балл', 'балла', 'баллов')}</summary><p class="qopen small" style="margin-top:6px">${esc(it.crit)}</p></details>` : '';
+  const gpt = my.trim() ? gptA('open', 'Проверить мой ответ в ChatGPT', fb ? 'btn violet block' : 'btn block', ` data-id="${esc(it.id)}"`) : '';
+  if (fb) return task + mine + model + crit + gpt;
+  return `${task}${mine}${model}${crit}${gpt}<div class="stack" style="gap:8px"><div class="kicker">Сколько баллов ставишь себе?</div><div class="scoreb">${Array.from({ length: max + 1 }, (_, k) => `<button class="btn ${k === max ? 'primary' : ''}" data-a="openScore" data-s="${k}">${k} из ${max}</button>`).join('')}</div></div>`;
+}
+document.addEventListener('input', e => { if (e.target && e.target.id === 'openTa' && ses) ses.openTxt = e.target.value; });
+/* тема теории для заданий ЕГЭ по обществознанию из файла */
+const theoryOfItem0 = theoryOfItem;
+theoryOfItem = function (it) {
+  if (it && it.pk && it.subj === 'soc') { const t = socTopic(it.th || SOC_TASK_TOPIC[it.task] || 'ege'); return t?.theory?.length ? { label: `Теория: «${t.title}»`, list: t.theory } : null; }
+  return theoryOfItem0(it);
+};
+const weakName0 = weakName;
+weakName = function (key) { const [s, t] = String(key).split(':'); return s === 'socE' ? `Общество · задание ${t}${SOC_TASK_NAMES[t] ? ' · ' + SOC_TASK_NAMES[t] : ''}` : weakName0(key); };
+const nextA0 = A.next;
 Object.assign(A, {
   openPack: b => go({ v: 'pack', id: b.dataset.id }),
+  /* диаграмма крупно: на телефоне в задании она мелкая - во весь экран, двигать пальцем вбок, можно растянуть двумя пальцами */
+  imgZoom: b => { const it = getItem(b.dataset.id); if (!it || !PACK_IMG_RE.test(it.img || '')) return;
+    openSheet(`<div class="row sb"><h2 class="h2">${esc(it.imgAlt || 'Диаграмма')}</h2><button class="btn sm ghost" data-a="closeSheet" aria-label="Закрыть">${ic('x', 16)}</button></div><div class="qzoom"><img src="${it.img}" alt="${esc(it.imgAlt || 'Диаграмма')}"></div><p class="muted small" style="margin:0">Двигай картинку пальцем вбок. Можно растянуть двумя пальцами.</p>`); },
   packVar: b => {
     const p = PACKS[b.dataset.id], n = +b.dataset.n, ids = p ? packIds(p.id, it => it.v === n) : [];
     if (!ids.length) { toast('В этом варианте пока нет заданий'); return; }
     ses = { sid: uid(), title: `Вариант ${n} · ${p.short}`, pool: ids, n: ids.length, ids: [...ids], i: 0, okN: 0, got: 0, newErr: 0, phase: 'q', sel: [], last: null, pack: p.id };
     sesGo();
   },
-  packTask: b => { const p = PACKS[b.dataset.id], t = +b.dataset.t; if (!p) return; startPool(`Задание ${t} · ${p.short}`, packIds(p.id, it => it.task === t), 10, { key: 'ruE:' + t }); },
+  packTask: b => {
+    const p = PACKS[b.dataset.id], t = +b.dataset.t; if (!p) return;
+    const ids = packIds(p.id, it => it.task === t), open = ids.some(id => ITEMS[id].type === 'open');
+    startPool(`Задание ${t} · ${p.short}`, ids, open ? 3 : 10, { key: PACK_SUBJ[p.subj].key + t });
+  },
   packDel: b => { const p = PACKS[b.dataset.id]; if (!p) return; openSheet(`<h2 class="h2">Убрать «${esc(p.title)}»?</h2><p class="muted small" style="margin:0">Задания из файла пропадут с этого устройства. Твои ответы на них останутся, а файл можно загрузить снова.</p><div class="row"><button class="btn primary" data-a="packDelYes" data-id="${esc(p.id)}">Убрать</button><button class="btn" data-a="closeSheet">Отмена</button></div>`); },
   packDelYes: async b => { const id = b.dataset.id; try { await packIdbDel(id); } catch {} try { localStorage.removeItem(PACK_KEY + id); localStorage.setItem(LS + '.packMsg', JSON.stringify({ t: 'Задания из файла убраны' })); } catch {} closeSheet(); location.reload(); },
+  openShow: () => { const ta = document.getElementById('openTa'); if (ta) ses.openTxt = ta.value; ses.reveal = true; sesSave(); render(); },
+  openScore: b => {
+    const it = getItem(ses.ids[ses.i]); if (!it) return;
+    const max = it.pts || 2, sc = Math.max(0, Math.min(max, +b.dataset.s || 0)), txt = ses.openTxt || '';
+    ses.reveal = false; answer(sc >= max, `${sc} из ${max} (самооценка)`); ses.openTxt = txt;
+  },
+  next: b => { if (ses) ses.openTxt = ''; return nextA0(b); },
 });
-/* после загрузки файла приложение перезапускается: показать, что получилось, и открыть варианты (после первого экрана) */
+/* после загрузки файла приложение перезапускается: показать, что получилось, и открыть его задания (после первого экрана) */
 packsReady.finally(() => setTimeout(() => {
   let m = null; try { m = JSON.parse(localStorage.getItem(LS + '.packMsg') || 'null'); localStorage.removeItem(LS + '.packMsg'); } catch {}
   if (!m) return;
-  if (m.id && PACKS[m.id]) { setTab('ru'); go({ v: 'pack', id: m.id }); }
+  if (m.id && PACKS[m.id]) { setTab(PACK_SUBJ[PACKS[m.id].subj].tab); go({ v: 'pack', id: m.id }); }
   toast(m.t);
 }, 60));
 /* ================= ChatGPT вместо Claude (03.11.2026: подписка на Claude заканчивается, у неё есть ChatGPT Plus) =================
@@ -547,6 +633,14 @@ const GPT_PROMPTS = {
     return `${GPT_REPORTS_HEAD}\n\n${list.map(reportLine).join('\n\n')}`;
   },
   report: a => { const r = (state.reports || []).find(x => x.id === a.dataset.id); return r ? `${GPT_REPORTS_HEAD}\n\n${reportLine(r, 0)}` : ''; },
+};
+/* часть 2 из файла (type 'open'): её ответ, образец и критерии ФИПИ - ChatGPT ставит балл и объясняет */
+GPT_PROMPTS.open = a => {
+  const it = getItem(a.dataset.id); if (!it) return '';
+  const my = String((ses && ses.ids && ses.ids[ses.i] === it.id && ses.openTxt) || '').trim();
+  if (words(my) < 2) { toast('Сначала напиши ответ - тогда ChatGPT его проверит'); return ''; }
+  const T = textOf(it);
+  return `Ты - эксперт ЕГЭ по ${gptSubj(it)}, проверяешь задания с развёрнутым ответом строго по критериям ФИПИ. Проверь мой ответ на задание ${it.task}.\n\n${T ? `${T.title || 'Текст'}:\n${T.s.join('\n')}${T.src ? `\n${T.src}` : ''}\n\n` : ''}${it.pre ? it.pre + '\n' : ''}Задание:\n${it.q}\n\nМой ответ:\n${my}\n\nЭлементы верного ответа (из сборника ФИПИ; допускаются иные формулировки, не искажающие смысла):\n${it.a || ''}${it.crit ? `\n\nКак оценивают:\n${it.crit}` : ''}\n\nПоставь балл (максимум ${it.pts || 2}) строго по этим критериям: что засчитано, что нет и почему. Если мой ответ верный, но сформулирован иначе, чем в образце, - засчитай. Потом покажи, как дописать мой ответ до максимума, - коротко и моими словами.\n${GPT_STYLE}`;
 };
 function gptManual(p) {
   openSheet(`<h2 class="h2">Скопируй и вставь в ChatGPT</h2><p class="muted small" style="margin:0">Само не скопировалось: подержи палец на тексте → «Выбрать всё» → «Скопировать», потом открой ChatGPT и вставь.</p><textarea class="codebox" readonly>${esc(p)}</textarea><a class="btn primary block" href="${GPT_URL}" target="_blank" rel="noopener">Открыть ChatGPT</a><button class="btn block" data-a="closeSheet">Готово</button>`);

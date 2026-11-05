@@ -7,8 +7,8 @@
   index.html            - приложение (PWA): ставится на телефон значком и работает без интернета
   sw.js                 - service worker: хранит приложение на устройстве
   manifest.webmanifest  - имя, значок и цвета для установки на телефон
-  ege70-offline.html    - то же приложение одним файлом (шрифты внутри) - для компьютера и про запас
-Шрифты и значки лежат в docs/fonts и docs/icons (значки рисует tools/make-icons.cjs).
+  ege70-offline.html    - то же приложение одним файлом - для компьютера и про запас
+Шрифт системный (своих шрифтов нет), значки лежат в docs/icons (их рисует tools/make-icons.cjs).
 
 Код и материалы артефакта не переписываются: сборщик точечно меняет несколько мест (PATCHES - каждое
 должно найтись ровно один раз, иначе сборка останавливается) и вставляет перед «старт» новые материалы
@@ -28,12 +28,9 @@ TOOLS = ROOT / 'tools'
 OUT = ROOT / 'docs'
 
 START = '/* ================= старт ================= */'
-FONTS = [  # (файл в docs/fonts, семейство, насыщенность)
-    ('manrope-cyrillic-ext', 'Manrope', '200 800'), ('manrope-cyrillic', 'Manrope', '200 800'),
-    ('manrope-latin-ext', 'Manrope', '200 800'), ('manrope-latin', 'Manrope', '200 800'),
-    ('unbounded-cyrillic-ext', 'Unbounded', '200 900'), ('unbounded-cyrillic', 'Unbounded', '200 900'),
-    ('unbounded-latin-ext', 'Unbounded', '200 900'), ('unbounded-latin', 'Unbounded', '200 900'),
-]
+# Шрифт - системный (на iPhone San Francisco): 04.11.2026 она попросила «нормальный шрифт» вместо Unbounded и Manrope.
+# Переменные --display и --body переопределены в tools/offline.css, свои шрифты приложение больше не грузит
+# (Unbounded и Manrope остались только для рисования значка: tools/icon-fonts, tools/make-icons.cjs).
 ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
 # материалы офлайн-версии: подробные пересказы, новые произведения, слова и связки, авторы, русский (ФИПИ-2026, тексты, задания)
 CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js', 'authors.js', 'ru-extra.js', 'navigator.js', 'soc-extra.js', 'soc-ege.js', 'en-ege.js']
@@ -44,6 +41,50 @@ BACK = '<button class="back" data-a="back">${ic(\'left\', 18)} Назад</butto
 
 # (что меняем, было, стало)
 PATCHES = [
+    # ---- задания из файлов по любому предмету (04.11.2026: обществознание 30 вариантов ФИПИ, русский 36 вариантов) ----
+    ('тексты к заданиям 17-20 по обществознанию - отдельно от русских (их случайно берут пробник и «вперемешку» по русскому)',
+     "const textOf = it => it.text ? (RU_TEXTS[it.text] || EN_TEXTS[it.text]) : null;",
+     "const SOC_TEXTS = {}; // тексты к заданиям 17-20 по обществознанию из файлов-пакетов (tools/offline.js)\n"
+     "const textOf = it => it.text ? (RU_TEXTS[it.text] || EN_TEXTS[it.text] || SOC_TEXTS[it.text]) : null;"),
+    ('подпись задания из файла задаёт сам пакет (it.lbl: «Общество · задание 9»)',
+     "const itemLabel = it => it.subj === 'ru' ?",
+     "const itemLabel = it => it.lbl ? it.lbl : it.subj === 'ru' ?"),
+    ('«Подтянуть» для заданий ЕГЭ по обществознанию из файла - по номеру задания (socE:N)',
+     "const weakKeyOf = it => it && ['ru', 'soc', 'en'].includes(it.subj) && it.task != null ? it.subj + ':' + it.task : null;",
+     "const weakKeyOf = it => it && it.pk && it.subj === 'soc' ? 'socE:' + it.task : it && ['ru', 'soc', 'en'].includes(it.subj) && it.task != null ? it.subj + ':' + it.task : null;"),
+    ('короткое имя «задание N» и для socE',
+     "const weakShort = key => { const [s, t] = String(key).split(':'); return s === 'ru' ?",
+     "const weakShort = key => { const [s, t] = String(key).split(':'); return s === 'ru' || s === 'socE' ?"),
+    ('теория для socE:N - тема обществознания, к которой относится номер задания',
+     "const weakTheoryRoute = key => { const [s, t] = String(key).split(':'); return s === 'ru' ? { v: 'task', n: +t, sub: 'theory' } :",
+     "const weakTheoryRoute = key => { const [s, t] = String(key).split(':'); return s === 'socE' ? { v: 'topic', id: SOC_TASK_TOPIC[t] || 'ege', sub: 'theory' } : s === 'ru' ? { v: 'task', n: +t, sub: 'theory' } :"),
+    ('в «Подтянуть» задания socE стоят вместе с темами обществознания',
+     "return s === 'soc' ? 1000 : 2000;",
+     "return s === 'soc' || s === 'socE' ? 1000 : 2000;"),
+    ('название тренировки socE:N',
+     "s === 'ruE' ? `Задание ${t} · как на ЕГЭ` :",
+     "s === 'ruE' ? `Задание ${t} · как на ЕГЭ` : s === 'socE' ? `Общество · задание ${t}` :"),
+    ('пробник по русскому: текст только из встроенных (у текстов из файла задания 1-3 и 23-26 разнесены - пробник вышел бы неполным)',
+     "const TK = Object.keys(RU_TEXTS), T = TK[Math.floor(Math.random() * TK.length)], ids = [];",
+     "const TK = Object.keys(RU_TEXTS).filter(k => !PACK_TEXT_IDS.has(k)), T = TK[Math.floor(Math.random() * TK.length)], ids = [];"),
+    ('часть 2 с развёрнутым ответом (open): пишет ответ, сверяет с образцом ФИПИ, ставит себе баллы',
+     "  let fbh = '';\n  if (fb) {",
+     "  if (it.type === 'open') q = openHTML(it, fb);\n  let fbh = '';\n  if (fb) {"),
+    ('часть 2 (open): заголовок разбора - её баллы, без строки «Правильно: ...» (образец уже показан выше)',
+     ": 'Ошибка - записала в красную тетрадь'}",
+     ": it.type === 'open' ? `${esc(L.my || '')} - записала в красную тетрадь, вернёмся к нему` : 'Ошибка - записала в красную тетрадь'}"),
+    ('соответствие: 1 балл из 2 - только за одну ошибку (как на ЕГЭ), в пробнике тоже',
+     "ses.score += ok ? p : (p === 2 && part >= 3 ? 1 : 0); }",
+     "ses.score += ok ? p : (p === 2 && it.left && part >= it.left.length - 1 ? 1 : 0); }"),
+    ('соответствие: «почти» - только за одну ошибку',
+     "part: !ok && part >= 3 ? part : 0 };",
+     "part: !ok && it.left && part >= it.left.length - 1 ? part : 0 };"),
+    ('соответствие за 1 балл (обществознание, задание 3): одна ошибка - уже 0 баллов',
+     "L.part ? `Почти: ${L.part} из ${it.left.length} - на ЕГЭ это 1 балл из 2` :",
+     "L.part ? `Почти: ${L.part} из ${it.left.length} - ${it.pts === 1 ? 'на ЕГЭ за это задание 0 баллов: нужно всё верно' : 'на ЕГЭ это 1 балл из 2'}` :"),
+    ('соответствие за 1 балл: без «добьём до 2 баллов»',
+     "'<p class=\"small\">Записала в красную тетрадь - добьём до 2 баллов.</p>' : ''}",
+     "`<p class=\"small\">Записала в красную тетрадь - добьём до ${it.pts === 1 ? 'верного ответа' : '2 баллов'}.</p>` : ''}"),
     ('старт после загрузки заданий из файлов (они в IndexedDB, читаются асинхронно)',
      "resumeFromState(true); // незаконченная тренировка или пробник: свежая - открыть на том же месте, давняя - карточкой на главной\nrender();",
      "startAfterPacks(() => { resumeFromState(true); render(); }); // незаконченная тренировка или пробник: свежая - открыть на том же месте, давняя - карточкой на главной"),
@@ -104,9 +145,9 @@ PATCHES = [
     ('карточка-самопроверка: пояснение с жирным',
      '<b>Ответ:</b> ${esc(it.a)}${it.why ? `\\n${esc(it.why)}` : \'\'}',
      '<b>Ответ:</b> ${esc(it.a)}${it.why ? `<br>${md(it.why)}` : \'\'}'),
-    ('карточка-самопроверка: ответ уже был на экране - «Правильно» не повторяем',
+    ('карточка-самопроверка и часть 2 (open): ответ уже был на экране - «Правильно» не повторяем',
      "${L.ok ? '' : `<p class=\"right\">",
-     "${L.ok || it.type === 'card' ? '' : `<p class=\"right\">"),
+     "${L.ok || it.type === 'card' || it.type === 'open' ? '' : `<p class=\"right\">"),
     # без Claude: вместо проверки Claude - кнопки «Проверить в ChatGPT» (gptBox в tools/offline.js) и честные подписи
     ('без Claude: вопросы к заданию',
      'Объяснения и вопросы Claude работают, когда программа открыта по ссылке или значком на рабочем столе.',
@@ -198,17 +239,6 @@ def split_source(html):
     return base.group(1), title.group(1).strip(), css.group(1), markup, js.group(1)
 
 
-def font_css(inline):
-    ranges = json.loads((TOOLS / 'font-ranges.json').read_text(encoding='utf-8'))
-    out = []
-    for name, family, weight in FONTS:
-        path = OUT / 'fonts' / f'{name}.woff2'
-        url = ('data:font/woff2;base64,' + base64.b64encode(path.read_bytes()).decode()) if inline else f'fonts/{name}.woff2'
-        out.append(f"@font-face{{font-family:'{family}';font-style:normal;font-weight:{weight};font-display:swap;"
-                   f"src:url({url}) format('woff2');unicode-range:{ranges[name]}}}")
-    return '\n'.join(out)
-
-
 def page(base, title, css, markup, js, build, single):
     icon = ('data:image/png;base64,' + base64.b64encode((OUT / 'icons' / 'icon-192.png').read_bytes()).decode()) if single else 'icons/icon-192.png'
     pwa = '' if single else (
@@ -230,9 +260,6 @@ def page(base, title, css, markup, js, build, single):
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" type="image/png" href="{icon}">
 {pwa}<style>{base}</style>
-<style>
-{font_css(single)}
-</style>
 <style>{css}</style>
 </head>
 <body>
@@ -262,8 +289,10 @@ def main():
                + (TOOLS / 'plan.js').read_text(encoding='utf-8'))
     js = patch(js, START, offline.rstrip() + '\n\n' + START, 'вставка tools/offline.js и tools/plan.js перед «старт»')
     css = css.rstrip() + '\n' + (TOOLS / 'offline.css').read_text(encoding='utf-8')
+    # у системного шрифта 800 - это Heavy, слишком жирно для текста: везде, где в стиле 800, ставим 700 (Bold)
+    css = re.sub(r'\b(font-weight:\s*|font:\s*)800\b', r'\g<1>700', css)
 
-    for name in [f'fonts/{n}.woff2' for n, _, _ in FONTS] + [f'icons/{n}' for n in ICONS]:
+    for name in [f'icons/{n}' for n in ICONS]:
         if not (OUT / name).is_file():
             fail(f'нет файла docs/{name}' + (' - запусти node tools/make-icons.cjs' if name.startswith('icons/') else ''))
 
@@ -272,7 +301,7 @@ def main():
     for part in (html, json.dumps(meta, sort_keys=True), offline, css,
                  (TOOLS / 'build.py').read_text(encoding='utf-8'), (TOOLS / 'sw.template.js').read_text(encoding='utf-8')):
         h.update(part.encode('utf-8'))
-    for name in [f'fonts/{n}.woff2' for n, _, _ in FONTS] + [f'icons/{n}' for n in ICONS]:
+    for name in [f'icons/{n}' for n in ICONS]:
         h.update((OUT / name).read_bytes())
     version = h.hexdigest()[:10]
     build = {'version': version, 'content': meta.get('updated', ''), 'source': meta.get('version', '')}
@@ -293,8 +322,8 @@ def main():
     }
     (OUT / 'manifest.webmanifest').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
-    # приложение ('./' - это index.html), шрифты и значки; файл-копия для компьютера в кэш телефона не нужен
-    assets = ['./', 'manifest.webmanifest'] + [f'fonts/{n}.woff2' for n, _, _ in FONTS] + [f'icons/{n}' for n in ICONS]
+    # приложение ('./' - это index.html) и значки; файл-копия для компьютера в кэш телефона не нужен
+    assets = ['./', 'manifest.webmanifest'] + [f'icons/{n}' for n in ICONS]
     sw = (TOOLS / 'sw.template.js').read_text(encoding='utf-8')
     sw = patch(sw, "'__VERSION__'", json.dumps(version), 'версия в sw.js')
     sw = patch(sw, '[/* __ASSETS__ */]', json.dumps(assets, ensure_ascii=False, indent=1), 'список файлов в sw.js')

@@ -1,18 +1,10 @@
 /* Service worker «ЕГЭ на 100»: хранит приложение на устройстве, чтобы оно открывалось без интернета.
    Собирается из tools/sw.template.js (tools/build.py подставляет версию и список файлов). */
-const VERSION = "2805a7e3e2";
+const VERSION = "da56273e32";
 const CACHE = 'ege70-' + VERSION;
 const ASSETS = [
  "./",
  "manifest.webmanifest",
- "fonts/manrope-cyrillic-ext.woff2",
- "fonts/manrope-cyrillic.woff2",
- "fonts/manrope-latin-ext.woff2",
- "fonts/manrope-latin.woff2",
- "fonts/unbounded-cyrillic-ext.woff2",
- "fonts/unbounded-cyrillic.woff2",
- "fonts/unbounded-latin-ext.woff2",
- "fonts/unbounded-latin.woff2",
  "icons/icon-192.png",
  "icons/icon-512.png",
  "icons/icon-maskable-512.png",
