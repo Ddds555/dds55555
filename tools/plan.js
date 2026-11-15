@@ -1,44 +1,38 @@
-/* ================= ПЛАН ДНЯ И ГЛАВНЫЙ ЭКРАН «ЕГЭ на 100» =================
-   Её распорядок (01.11.2026): «сочинение пишу с утра, часов в девять; днём могу прочитать какое-то произведение;
-   вечером на сочинение сил нет - могу что-то прорешать, и то лёгкое». Ещё: «английский, общество - про них тоже
-   не надо забывать», «будем идти по каждому заданию» (сейчас она проходит все паронимы), «по минутам - непонятно».
-   Поэтому день - три шага: утро - сочинение, день - чтение, вечер - 15 лёгких заданий одного предмета
-   (Пн, Ср, Пт - русский по порядку заданий; Вт, Сб - обществознание; Чт, Вс - английский). Минут больше нет.
-   Сочинение и чтение (бумага, книга) она отмечает сама - кружком; вечер отмечается сам, когда решено 15 заданий.
-   Учёт: ответы за день по предметам и тренировкам (day().t), написанные слова (day().w), её отметки (day().m),
-   тема сочинения на день (day().pk.essT), темы, на которые уже писала (state.essT), книга, которую читает
-   (state.planBook), задание русского, которое проходит (state.ruCur). */
+/* ================= ПЛАН ДНЯ, ГЛАВНЫЙ ЭКРАН И КОПИЛКА «ЕГЭ на 100» =================
+   15.11.2026 переделано по её словам: «план слишком огромный - думаешь "ну нафиг" и даже не решаешь», «уроки с 8:30 до 16,
+   в 9 утра сидеть писать не могу», «сочинение каждый день не хочу, одно по выходным - нормально, с напоминанием»,
+   «чтение такое себе», «русский - в приоритете, у меня там не очень идёт», «общество тоже, с правом сильно западает»,
+   «английский пока не доработан - не надо». Поэтому день - НОРМА 15 заданий тремя ПОРЦИЯМИ по 5 (до уроков, на перемене,
+   вечером - когда удобно, порядок не важен). Одна порция (5 заданий) - день засчитан в серию. Русский - главный; во вторник,
+   четверг и субботу третья порция - общество (сначала «Конституция и власть»). В выходные - «сочинение недели» по желанию
+   (до 2 декабря - итоговое, потом - сочинение ЕГЭ). Копилка - отдельная вкладка-кабинет: деньги, серия и бонусы за неё,
+   что уже сделано, «было -> стало», активность, обещания и вехи.
+   Учёт: ответы за день (day().n), по предметам и тренировкам (day().t), написанные слова (day().w), её отметки (day().m),
+   тема сочинения на день (day().pk.essT), темы, на которые уже писала (state.essT), задание русского (state.ruCur). */
 
 const PLAN_PHASES = [
-  { id: 'p1', from: '2026-09-01', to: '2026-12-02', when: 'до 2 декабря', name: 'Итоговое сочинение + русский по заданиям', tag: 'итоговое сочинение', morning: 'fin', day: 'book',
-    focus: 'Утром - сочинение на тему дня (темы подобраны к твоим книгам), днём - книга, вечером - 15 лёгких заданий. Русский идёт по порядку заданий, каждое - до конца. Общество и английский - по два вечера в неделю, чтобы не забывались.' },
-  { id: 'p2', from: '2026-12-03', to: '2027-01-31', when: '3 декабря - январь', name: 'Сочинение ЕГЭ + русский по заданиям', tag: 'сочинение ЕГЭ', morning: 'ess27', day: 'book',
-    focus: 'Утром - сочинение ЕГЭ по тексту (задание 27). Днём - книга: из неё примеры-аргументы для сочинения. Вечером - те же 15 лёгких заданий: русский дальше по порядку, общество, английский.' },
-  { id: 'p3', from: '2027-02-01', to: '2027-03-31', when: 'февраль - март', name: 'Сочинение ЕГЭ + пробники', tag: 'сочинение ЕГЭ + пробники', morning: 'ess27', sat: 'mock', day: 'book',
-    focus: 'Утром - сочинение ЕГЭ, в субботу утром вместо него - пробник тестовой части. Вечером - последние задания русского, потом всё вперемешку.' },
-  { id: 'p4', from: '2027-04-01', to: '2027-07-31', when: 'апрель - экзамен', name: 'Пробники и повторение', tag: 'пробники + повторение', morning: 'ess27', sat: 'mock', day: 'err',
-    focus: 'Суббота - пробник, в остальные утра - сочинение ЕГЭ. Днём - ошибки из красной тетради. Новых тем не берём - доводим до идеала то, что знаешь.' },
+  { id: 'p1', from: '2026-09-01', to: '2026-12-02', when: 'до 2 декабря', name: 'Итоговое сочинение + русский по заданиям', tag: 'итоговое сочинение',
+    focus: 'Каждый день - норма 15 заданий тремя порциями по 5: русский, а во вторник, четверг и субботу вечером - общество. В выходные - сочинение недели на итоговое (по желанию). 1 декабря - только повторить свои книги, 2 декабря - итоговое.' },
+  { id: 'p2', from: '2026-12-03', to: '2027-01-31', when: '3 декабря - январь', name: 'Русский по заданиям + сочинение ЕГЭ', tag: 'сочинение ЕГЭ',
+    focus: 'Порции по 5 каждый день: русский дальше по порядку заданий, по Вт, Чт, Сб - общество. В выходные - сочинение ЕГЭ по тексту (задание 27).' },
+  { id: 'p3', from: '2027-02-01', to: '2027-03-31', when: 'февраль - март', name: 'Сочинение ЕГЭ + пробники', tag: 'сочинение ЕГЭ + пробники', sat: 'mock',
+    focus: 'Порции по 5 каждый день. В субботу - пробник тестовой части, в воскресенье - сочинение ЕГЭ.' },
+  { id: 'p4', from: '2027-04-01', to: '2027-07-31', when: 'апрель - экзамен', name: 'Пробники и повторение', tag: 'пробники + повторение', sat: 'mock',
+    focus: 'Порции - из красной тетради и вперемешку, в субботу - пробник. Новых тем не берём - доводим до идеала то, что знаешь.' },
 ];
-/* вечер: какой предмет в какой день недели (0 - воскресенье) */
-const PLAN_EVE = { 1: 'ru', 2: 'soc', 3: 'ru', 4: 'en', 5: 'ru', 6: 'soc', 0: 'en' };
-const PLAN_EVE_NAMES = { ru: 'русский', soc: 'обществознание', en: 'английский' };
-const EVE_N = 15;
-const PLAN_SPECIAL = { '2026-12-01': ['review', 'rest'], '2026-12-02': ['exam'] };
+const NORM = 15, PORTION = 5, MIN_N = 5;
+const EVE_N = PORTION; // «Ещё N» после тренировки и в задании - тоже порция
+const SOC_DAYS = { 2: 1, 4: 1, 6: 1 }; // Вт, Чт, Сб: третья порция - обществознание
+const PLAN_SPECIAL = { '2026-12-01': 'review', '2026-12-02': 'exam' };
 /* письменный шаг засчитан, когда сегодня в поле написано не меньше need слов и из них новых - не меньше gain */
 const PLAN_WRITE = { fpText: ['para', 50, 40], fText: ['full', 250, 200], esText: ['ess27', 150, 120] };
-const SLOTS = ['Утро · 9:00', 'День', 'Вечер'];
-const eveLine = 'Пн, Ср, Пт - русский · Вт, Сб - общество · Чт, Вс - английский';
+const PORTION_WHEN = ['До уроков', 'На перемене', 'Вечером'];
 
 const planPhase = (k = today()) => PLAN_PHASES.find(p => k >= p.from && k <= p.to) || (k < PLAN_PHASES[0].from ? PLAN_PHASES[0] : PLAN_PHASES[PLAN_PHASES.length - 1]);
-function planIds(k = today()) {
-  if (PLAN_SPECIAL[k]) return PLAN_SPECIAL[k];
-  const ph = planPhase(k), wd = D(k).getDay();
-  return [wd === 6 && ph.sat ? ph.sat : ph.morning, ph.day, PLAN_EVE[wd]];
-}
-/* какая часть дня сейчас: 0 - утро, 1 - день, 2 - вечер */
-const slotNow = () => { const h = new Date().getHours(); return h < 12 ? 0 : h < 17 ? 1 : 2; };
+const weekStart = k => addDays(k, -((D(k).getDay() + 6) % 7));
+const isWeekend = k => [0, 6].includes(D(k).getDay());
 
-/* ---- утро: тема сочинения на день - к прочитанным книгам, направления по кругу, сначала темы, на которые ещё не писала ---- */
+/* ---- сочинение: тема на день - к прочитанным книгам, направления по кругу, сначала темы, на которые ещё не писала ---- */
 function essCands() { const read = new Set(finReadWorks().map(w => w.id)), c = FIN_T.filter(t => (t.works || []).some(id => read.has(id))); return c.length ? c : FIN_T; }
 function essPick(k) {
   const c = essCands(); if (!c.length) return null;
@@ -52,27 +46,24 @@ function essTopic(k, d) {
   return t;
 }
 const essWorks = t => finReadWorks().filter(w => (t.works || []).includes(w.id)).slice(0, 3);
-/* день: книга, которую она читает (выбрала в плане), - пока не нажмёт «Прочитала»; потом новая книга, которая закроет
-   больше всего тем (сначала короткие). Тест по уже прочитанному - кнопкой рядом, а когда новых книг нет - сам шаг */
+/* сочинения целиком: дни, когда в поле написано 250+ новых слов (w.full, w.ess27) или она отметила кружок (m.fin, m.ess27) */
+const essDayDone = d => !!(d?.w?.full || d?.m?.fin || d?.w?.ess27 || d?.m?.ess27);
+const finEssDays = () => Object.keys(state.days || {}).filter(k => essDayDone(state.days[k]));
+const essWeekDone = (k = today()) => { const ws = weekStart(k); return Object.keys(state.days || {}).some(x => x >= ws && x <= k && essDayDone(state.days[x])); };
+/* книга для итогового (экран «План до ЕГЭ»): та, что читает, или та, что закроет больше всего тем */
 function planBook() {
   const b = finWork(state.planBook); if (b && !finReadOf(b.id)) return b;
   const cov = finCovered(), next = FIN_W.filter(w => !finReadOf(w.id)).map(w => ({ w, g: finGain(w, cov) })).filter(x => x.g > 0)
     .sort((a, b) => finShort(b.w) - finShort(a.w) || b.g - a.g)[0];
   return next?.w || finNextWork();
 }
-/* прочитанная книга, которую пора закрепить тестом (тест ниже 80%) */
-const planFixBook = () => finReadWorks().filter(w => !finDone(w)).sort((a, b) => mastery('finw:' + a.id).pct - mastery('finw:' + b.id).pct)[0] || null;
 
-/* ---- русский по заданиям: сначала теория, потом все задания темы до конца (её слова: «прошиваю все паронимы,
-   будем идти по каждому заданию»). Порядок - от самых быстрых баллов; первыми - паронимы, их она сейчас проходит.
-   Задание пройдено, когда решены все его задания хотя бы по разу (или она нажала «Уже знаю»).
-   state.ruPath[номер] = { th: дата теории, done: дата «уже знаю» }, state.ruCur - задание, которое она взяла сама ---- */
-/* 03.11.2026 её пробник: задания 1-8 - всё верно, 9-14 - «всё ужасно, орфографию надо прям подтянуть». Поэтому сначала
-   орфография 9-15, потом пунктуация 16-21, текст 22-26, а 1-8 (их она решает) - в конце */
+/* ---- русский по заданиям: сначала теория, потом все задания темы до конца. Задание пройдено, когда решены все его задания
+   хотя бы по разу (или она нажала «Уже знаю»). state.ruPath[номер] = { th: дата теории, done: дата «уже знаю» },
+   state.ruCur - задание, которое она взяла сама.
+   03.11.2026 её пробник: 1-8 верно, 9-14 - «всё ужасно» - поэтому сначала орфография 9-15, потом пунктуация, текст, а 1-8 в конце */
 const RU_PATH = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 24, 23, 25, 3, 5, 4, 7, 6, 8, 1, 2];
-/* один раз: если она сама взяла задание из 1-8 (паронимы), переключаю на орфографию */
 if (!state.orthoFocus) { if (state.ruCur && state.ruCur < 9) delete state.ruCur; state.orthoFocus = today(); save(); }
-/* орфография каждый день: 10 заданий из 9-15 вперемешку (сначала ошибки и новые) */
 const ORTHO = [9, 10, 11, 12, 13, 14, 15];
 const orthoPool = () => [...new Set(ORTHO.flatMap(n => [...(TASK_ITEMS['ru:' + n] || []), ...(TASK_ITEMS['ruE:' + n] || [])]))];
 const ruP = n => state.ruPath?.[n] || {};
@@ -82,84 +73,67 @@ const ruTopicKey = n => ((TASK_ITEMS['ru:' + n] || []).length ? 'ru:' : 'ruE:') 
 const ruPool = n => n === 25 ? [...(TASK_ITEMS['ru:25'] || []), ...(TASK_ITEMS['ruE:25'] || [])] : (TASK_ITEMS[ruTopicKey(n)] || []);
 const ruProg = n => { const ids = ruPool(n); let seen = 0; for (const id of ids) if (itemStatus(id) !== 'new') seen++; return { seen, total: ids.length }; };
 const ruTotal = n => ruPool(n).length;
-const ruSeen = n => ruProg(n).seen;
 const ruPassed = n => { if (ruP(n).done) return true; const p = ruProg(n); return p.total > 0 && p.seen >= p.total; };
 const ruTheoryOk = n => !!ruP(n).th || ruProg(n).seen >= 10;
 const ruPassedList = () => RU_PATH.filter(ruPassed);
 const ruOpen = n => ruTask(n) && ruPool(n).length && !ruPassed(n);
 const ruTopic = () => (ruOpen(state.ruCur) ? state.ruCur : RU_PATH.find(ruOpen)) || null;
-function ruPractice(n, cnt = EVE_N) {
+function ruPractice(n, cnt = PORTION) {
   const T = ruTask(n);
   startPool(`Задание ${n}: ${T ? T.title : ''}`, ruPool(n), cnt, { key: ruTopicKey(n) });
 }
-/* обществознание и английский: тоже по порядку - тема, пока не решены все её задания; потом самая слабая */
+/* обществознание: сначала её слабое - Конституция и право (15.11.2026), потом по порядку тем; английский - по порядку */
 const SOC_ORDER = () => SOC_TOPICS.filter(t => (TASK_ITEMS['soc:' + t.id] || []).length);
-function socNow() { const L = SOC_ORDER(), m = t => mastery('soc:' + t.id); return L.find(t => m(t).seen < m(t).total) || [...L].sort((a, b) => m(a).pct - m(b).pct)[0] || null; }
+const SOC_FOCUS = ['konst', 'law', 'polit', 'power'];
+function socNow() {
+  const L = SOC_ORDER(), m = t => mastery('soc:' + t.id), open = t => t && m(t).seen < m(t).total;
+  const f = SOC_FOCUS.map(id => L.find(t => t.id === id)).find(open);
+  return f || L.find(open) || [...L].sort((a, b) => m(a).pct - m(b).pct)[0] || null;
+}
 const EN_ORDER = ['gram', 'wf', 'lex', 'read', 'listen'];
 const EN_LIST = () => EN_ORDER.map(enSec).filter(s => s && (TASK_ITEMS['en:' + s.id] || []).length);
 function enNow() { const L = EN_LIST(), m = s => mastery('en:' + s.id); return L.find(s => m(s).seen < m(s).total) || [...L].sort((a, b) => m(a).pct - m(b).pct)[0] || null; }
 
-/* один шаг плана: часть дня, что делать, сделан ли */
-function planStep(id, k, d) {
-  const t = d.t || {}, w = d.w || {};
-  const S = {
-    fin: () => {
-      const tp = essTopic(k, d), ws = tp ? essWorks(tp) : [];
-      return { si: 0, area: 'Итоговое сочинение', title: tp ? tp.text : 'Сочинение целиком', go: 'Писать', alt: tp ? ['essNew', 'Другая тема'] : null,
-        sub: `Напиши сочинение на эту тему, от 350 слов${ws.length ? `. Подойдёт: ${ws.map(x => `«${x.title}»`).join(', ')}` : ''}. Пишешь на бумаге - потом нажми кружок слева.`, done: !!w.full };
-    },
-    ess27: () => ({ si: 0, area: 'Сочинение ЕГЭ', title: 'Сочинение по тексту (задание 27)', go: 'Писать',
-      sub: 'Проблема, позиция автора, два примера из текста с пояснением и связью, твоё мнение и пример-аргумент. От 150 слов. На бумаге - потом кружок слева.', done: !!w.ess27 }),
-    mock: () => ({ si: 0, area: 'Пробник', title: 'Пробник тестовой части', go: 'Начать', sub: '26 заданий подряд, как на экзамене, - в конце баллы по шкале ЕГЭ. Сочинение сегодня утром не пишешь.', done: state.mocks.some(x => x.d === k) }),
-    book: () => {
-      const b = planBook(); if (!b) return null;
-      const rd = !!finReadOf(b.id), g = rd ? 0 : finGain(b), au = b.authorShort || b.author, tested = Object.keys(t).filter(x => x.startsWith('s:finw:')).reduce((a, x) => a + t[x], 0);
-      const fx = rd ? null : planFixBook();
-      return { si: 1, area: 'Чтение', w: b.id, title: rd ? `Повторить «${b.title}»` : `Читать «${b.title}»`, go: rd ? 'Тест по книге' : 'Открыть книгу', alt: fx ? ['bookQuiz', `Тест: «${fx.title}»`] : null, fx: fx?.id,
-        sub: rd ? `${au}. Короткий тест: герои, эпизоды, аргументы - чтобы книга не забылась к сочинению.` : `${au}, ${b.genre}${g ? `. Даст аргументы ещё к ${g} ${plural(g, 'теме', 'темам', 'темам')}` : ''}. Почитала сегодня - нажми кружок. Дочитаешь - в карточке «Прочитала», будет короткий тест.`,
-        done: rd ? tested >= 8 : Object.values(state.readW || {}).includes(k) };
-    },
-    err: () => { const due = errDue().length; return { si: 1, area: 'Ошибки', title: due ? `Красная тетрадь: ${due}` : 'Ошибки на сегодня повторены', go: due ? 'Начать' : null, sub: 'Три верных ответа в разные дни - и ошибка выучена.', done: due === 0 }; },
-    ru: () => {
-      const n = ruTopic(), got = n ? t['ru:' + n] || 0 : t.ru || 0;
-      if (!n) return { si: 2, area: 'Русский', title: `${EVE_N} заданий вперемешку`, go: 'Начать', more: 1, sub: 'Все задания пройдены: теперь 1-26 вперемешку, как на экзамене.', count: [Math.min(got, EVE_N), EVE_N], done: got >= EVE_N };
-      const T = ruTask(n), pr = ruProg(n), th = ruTheoryOk(n), need = Math.min(EVE_N, pr.total);
-      return { si: 2, area: `Русский · задание ${n}`, title: T.title, topic: n, prog: [pr.seen, pr.total], go: th ? 'Начать' : 'Теория', more: th ? 1 : 0,
-        sub: th ? `${EVE_N} заданий. Пройдено ${pr.seen} из ${pr.total} - идём до конца, потом следующее задание.` : `Новое задание: сначала теория (минут пять), потом ${EVE_N} заданий.`, count: [Math.min(got, need), need], done: got >= need };
-    },
-    soc: () => {
-      const tp = socNow(); if (!tp) return null;
-      const m = mastery('soc:' + tp.id), got = t.soc || 0, need = Math.min(EVE_N, m.total);
-      return { si: 2, area: 'Обществознание', title: tp.title, soc: tp.id, prog: [m.seen, m.total], go: 'Начать', alt: ['socTheory', 'Теория'], more: 1,
-        sub: `${need} ${plural(need, 'вопрос', 'вопроса', 'вопросов')}. Пройдено ${m.seen} из ${m.total}${m.seen ? '' : ' - тема новая, сначала загляни в теорию'}.`, count: [Math.min(got, need), need], done: got >= need };
-    },
-    en: () => {
-      const s = enNow(); if (!s) return null;
-      const m = mastery('en:' + s.id), got = t.en || 0, need = Math.min(EVE_N, m.total);
-      return { si: 2, area: 'Английский', title: s.title, en: s.id, prog: [m.seen, m.total], go: 'Начать', alt: ['enTheory', 'Теория'], more: 1,
-        sub: `${need} ${plural(need, 'задание', 'задания', 'заданий')}. Пройдено ${m.seen} из ${m.total}.`, count: [Math.min(got, need), need], done: got >= need };
-    },
-    review: () => ({ si: 0, area: 'Итоговое сочинение', title: 'Завтра итоговое - только повторить', go: 'Мои книги', sub: 'Перечитай план «Как писать» и «Кратко» своих книг, вспомни аргументы. Новое сегодня не учи.', done: false }),
-    rest: () => ({ si: 2, area: 'Отдых', title: 'Отдохни и выспись', go: null, sub: 'Паспорт, чёрная гелевая ручка, вода - собери с вечера.', done: false }),
-    exam: () => ({ si: 0, area: 'Итоговое сочинение', title: 'Сегодня итоговое сочинение', go: null, sub: 'Вступление - два аргумента из книг - вывод, от 350 слов. Ты готовилась - всё получится!', done: false }),
-  };
-  const s = S[id]?.(); if (!s) return null;
-  const auto = !!s.done;
-  return { id, slot: SLOTS[s.si], ...s, auto, done: auto || !!d.m?.[id] };
+/* ---- порции: что решать. Сначала её ошибки по предмету на сегодня, потом задание (тема), которое она проходит ---- */
+function portionSubj(k, i) { return i === 2 && SOC_DAYS[D(k).getDay()] ? 'soc' : 'ru'; }
+function portionInfo(subj) {
+  if (subj === 'soc') {
+    const tp = socNow(), m = tp ? mastery('soc:' + tp.id) : null;
+    const errs = errDue().filter(e => errGroup(e) === 'soc').map(e => e.id).filter(id => getItem(id));
+    return { subj, area: 'Обществознание', title: tp ? tp.title : 'Обществознание', key: tp ? 'soc:' + tp.id : null, topic: tp?.id,
+      prog: m ? [m.seen, m.total] : null, theory: !!tp && !m.seen, pool: [...new Set([...errs, ...(tp ? TASK_ITEMS['soc:' + tp.id] || [] : [])])] };
+  }
+  const n = ruTopic(), pr = n ? ruProg(n) : null;
+  const errs = errDue().filter(e => errGroup(e) === 'ru').map(e => e.id).filter(id => getItem(id));
+  return { subj, area: n ? `Русский · задание ${n}` : 'Русский', title: n ? ruTask(n).title : 'Орфография 9-15 вперемешку', key: n ? ruTopicKey(n) : 'ortho', n,
+    prog: pr ? [pr.seen, pr.total] : null, theory: !!n && !ruTheoryOk(n), pool: [...new Set([...errs, ...(n ? ruPool(n) : orthoPool())])] };
 }
+function startPortion(subj) {
+  const P = portionInfo(subj); if (!P.pool.length) { toast('Здесь пока нечего решать'); return; }
+  startPool(`${P.subj === 'soc' ? 'Общество' : 'Русский'}: ${PORTION} заданий`, P.pool, PORTION, P.key ? { key: P.key } : {});
+}
+
+/* ---- план на день ---- */
 function planToday(k = today()) {
-  const d = day(k), ph = planPhase(k), steps = planIds(k).map(id => planStep(id, k, d)).filter(Boolean);
-  /* написала сочинение на тему дня - тема уходит в «уже писала», завтра будет другая */
-  const et = d.pk?.essT; if (k === today() && et && (d.w?.full || d.m?.fin) && !state.essT?.[et]) { state.essT = { ...(state.essT || {}), [et]: k }; save(); }
-  return { k, ph, steps, done: steps.filter(s => s.done).length };
+  const d = day(k), ph = planPhase(k), n = d.n || 0, done = Math.min(3, Math.floor(n / PORTION));
+  const steps = [0, 1, 2].map(i => ({ i, when: PORTION_WHEN[i], subj: portionSubj(k, i), done: done > i }));
+  return { k, ph, n, done, steps, ess: essStep(k, d, ph), special: PLAN_SPECIAL[k] || null };
 }
-/* следующий шаг - по времени суток: вечером не зовём писать утреннее сочинение */
-const planNext = P => { const sn = slotNow(); return P.steps.find(s => !s.done && s.si >= sn) || (sn === 2 ? null : P.steps.find(s => !s.done)) || null; };
-/* итог дня для полоски недели: [сделано, всего] */
-function planSnap(P) { const d = day(P.k), v = [P.done, P.steps.length]; if (!d.pl || d.pl[0] !== v[0] || d.pl[1] !== v[1]) { d.pl = v; save(); } }
-/* серия: дни подряд, когда план выполнен целиком или сделан хотя бы минимум - MIN_N заданий (15.11.2026: после перерыва
-   три шага в день - много; маленький день тоже засчитывается, чтобы серия не рвалась); выходные без шагов серию не рвут */
-const MIN_N = 5;
+/* выходные: сочинение недели (по желанию) - до 2 декабря итоговое, потом сочинение ЕГЭ; в субботу в феврале-мае - пробник */
+function essStep(k, d, ph) {
+  if (PLAN_SPECIAL[k] || !isWeekend(k)) return null;
+  if (ph.sat === 'mock' && D(k).getDay() === 6) return { id: 'mock', title: 'Пробник тестовой части', sub: '26 заданий подряд, как на экзамене, - в конце баллы по шкале ЕГЭ.', done: state.mocks.some(x => x.d === k), go: 'Начать' };
+  if (ph.id === 'p1') {
+    const tp = essTopic(k, d), ws = tp ? essWorks(tp) : [], ed = daysTo(ESSAY_DATE), cnt = finEssDays().length;
+    return { id: 'fin', title: tp ? tp.text : 'Итоговое сочинение целиком', topic: tp?.id, done: essWeekDone(k), go: 'Писать', alt: tp ? ['essNew', 'Другая тема'] : null,
+      sub: `Итоговое через ${ed} ${plural(ed, 'день', 'дня', 'дней')}, сочинений написано: ${cnt}. От 350 слов${ws.length ? `, подойдёт ${ws.map(x => `«${x.title}»`).join(', ')}` : ''}. Пишешь на бумаге - потом нажми кружок.` };
+  }
+  return { id: 'ess27', title: 'Сочинение ЕГЭ по тексту (задание 27)', done: essWeekDone(k), go: 'Писать',
+    sub: 'Проблема, позиция автора, два примера из текста с пояснением и связью, твоё мнение. От 150 слов. На бумаге - потом нажми кружок.' };
+}
+/* итог дня для полоски недели: [порций сделано, всего] */
+function planSnap(P) { const d = day(P.k), v = [P.done, 3]; if (!d.pl || d.pl[0] !== v[0] || d.pl[1] !== v[1]) { d.pl = v; save(); } }
+/* серия: дни подряд, когда сделана хотя бы одна порция (MIN_N заданий) или весь план; выходные без шагов серию не рвут */
 const dayCounts = k => { const d = state.days[k], pl = d?.pl; return !!(pl && pl[1] > 0 && pl[0] >= pl[1]) || (d?.n || 0) >= MIN_N; };
 function planStreak() {
   let k = today(), n = 0; const rest = x => x && x[1] === 0;
@@ -167,19 +141,38 @@ function planStreak() {
   for (let i = 0; i < 400; i++, k = addDays(k, -1)) { if (dayCounts(k)) n++; else if (!rest(state.days[k]?.pl)) break; }
   return n;
 }
+function bestStreak() {
+  const keys = Object.keys(state.days || {}).sort(); if (!keys.length) return 0;
+  let best = 0, cur = 0;
+  for (let k = keys[0]; k <= today(); k = addDays(k, 1)) { if (dayCounts(k)) { cur++; best = Math.max(best, cur); } else cur = 0; }
+  return best;
+}
+/* бонусы за серию (её просьба: «мотивашки - если серия, то ещё что-то»): один раз за каждую серию */
+const STREAK_BONUS = [[3, 50], [7, 150], [14, 400], [30, 1000]];
+function streakBonus() {
+  const s = planStreak(); if (!s) return 0;
+  const start = addDays(today(), -(s - 1)); let got = 0;
+  for (const [m, amt] of STREAK_BONUS) if (s === m && once(`ser:${m}:${start}`)) got += earn(amt, `серия ${m} ${plural(m, 'день', 'дня', 'дней')} подряд`);
+  if (s > 30 && s % 30 === 0 && once(`ser:${s}:${start}`)) got += earn(1000, `серия ${s} дней подряд`);
+  if (got) save();
+  return got;
+}
+const nextBonus = s => STREAK_BONUS.find(([m]) => m > s) || [Math.ceil((s + 1) / 30) * 30, 1000];
 
-/* ---- учёт: ответы сегодня по предметам, видам заданий итогового и тренировкам ---- */
+/* ---- учёт: ответы сегодня по предметам, видам заданий итогового и тренировкам; бонус за серию; сигнал напоминаниям ---- */
 const record0 = record;
 record = function (it, ok, my) {
-  const d = day(), t = d.t = d.t || {}, inc = x => { t[x] = (t[x] || 0) + 1; };
+  const d = day(), t = d.t = d.t || {}, inc = x => { t[x] = (t[x] || 0) + 1; }, before = d.n || 0;
   if (it?.subj) inc(it.subj);
   if (it?.subj === 'fin' && it.task) inc('fin:' + it.task);
   if (it?.subj === 'ru' && it.task) inc('ru:' + it.task);
   if (ses?.key) inc('s:' + ses.key);
-  return record0(it, ok, my);
+  let got = record0(it, ok, my);
+  if (before < MIN_N && (day().n || 0) >= MIN_N) got += streakBonus();
+  if (typeof notifyPing === 'function') notifyPing();
+  return got;
 };
-/* письменные шаги: сколько слов было в поле, когда она его открыла сегодня (или меньше всего за день), - новые слова = разница.
-   Так засчитывается и написанное заново, и вставленное целиком, а вчерашний текст без новых слов - нет */
+/* письменные шаги: новые слова = разница с тем, сколько было в поле, когда она его открыла сегодня */
 document.addEventListener('focusin', e => {
   if (!PLAN_WRITE[e.target?.id]) return;
   const d = day(), lo = d.wl = d.wl || {}; if (lo[e.target.id] == null) { lo[e.target.id] = words(e.target.value); save(); }
@@ -191,9 +184,9 @@ document.addEventListener('input', e => {
   if (!w[W[0]] && n >= W[1] && n - lo[e.target.id] >= W[2]) { w[W[0]] = 1; save(); }
 });
 
-/* ---- главный экран ---- */
+/* ================= главный экран ================= */
 ICONS.right = '<path d="M9 5l7 7-7 7"/>';
-const COVER_LINES = ['Цель - сотка, минимум 80+. Каждый день по шагу.', 'Сотка складывается из маленьких дней.', 'Не идеально, а каждый день.', 'Сделала план дня - день засчитан.', 'Три шага сегодня - это баллы в мае.', 'Ты уже в пути. Просто следующий шаг.'];
+const COVER_LINES = ['Цель - сотка, минимум 80+. По 5 заданий за раз.', 'Сотка складывается из маленьких дней.', 'Не идеально, а каждый день.', 'Пять заданий - и день засчитан.', 'Маленькие порции - баллы в мае.', 'Ты уже в пути. Просто следующая порция.'];
 function coverHTML() {
   const ed = daysTo(ESSAY_DATE), xd = daysTo(EXAM_DATE), n = Math.round(D(today()) / 864e5);
   return `<section class="cover">
@@ -202,85 +195,81 @@ function coverHTML() {
     <div class="cv-pills">${ed >= 0 ? `<button class="cv-pill" data-a="openFinal">${ic('pen', 15)} Итоговое ${ed ? `через ${ed} ${plural(ed, 'день', 'дня', 'дней')}` : 'сегодня'}</button>` : ''}${xd >= 0 ? `<button class="cv-pill" data-a="openPlan">${ic('cap', 15)} ЕГЭ - примерно через ${xd} ${plural(xd, 'день', 'дня', 'дней')}</button>` : ''}</div>
   </section>`;
 }
-function planGoBtn(s, primary) {
-  return s.go ? `<button class="btn sm ${primary ? 'primary' : ''} pgo" data-a="planGo" data-s="${s.id}"${s.w ? ` data-w="${esc(s.w)}"` : ''}>${ic('play', 16)} ${esc(s.go)}</button>` : '';
-}
-const altBtn = s => s.alt ? `<button class="btn sm ghost pgo" data-a="${s.alt[0]}"${s.soc ? ` data-id="${esc(s.soc)}"` : s.en ? ` data-id="${esc(s.en)}"` : s.fx ? ` data-id="${esc(s.fx)}"` : ''}>${esc(s.alt[1])}</button>` : '';
-const moreBtn = s => s.more ? `<button class="btn sm ghost pgo" data-a="planGo" data-s="${s.id}">Ещё ${EVE_N}</button>` : '';
-function planStepHTML(s, cur) {
-  const bar = s.prog && s.prog[1] ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${s.prog[0] / s.prog[1] * 100}%"></i></div>` : '';
-  return `<div class="pstep ${s.done ? 'done' : ''}">
-    <button class="pchk" data-a="planTick" data-s="${s.id}" aria-pressed="${s.done}" aria-label="${s.done ? 'Сделано' : 'Отметить сделанным'}">${s.done ? ic('check', 20) : ''}</button>
-    <div class="pbody"><div class="parea"><span class="pslot">${esc(s.slot)}</span> ${esc(s.area)}</div><div class="pttl">${esc(s.title)}</div>
-      ${s.done ? (s.more ? `<div class="row" style="gap:8px">${moreBtn(s)}</div>` : '') : `${s.sub ? `<div class="psub">${esc(s.sub)}</div>` : ''}${bar}<div class="row" style="gap:8px">${planGoBtn(s, cur)}${altBtn(s)}${s.topic && !ruTheoryOk(s.topic) ? `<button class="btn sm ghost pgo" data-a="ruSkip" data-n="${s.topic}">Уже знаю</button>` : ''}</div>`}
+function portionHTML(P, s, cur) {
+  const I = portionInfo(s.subj), bar = I.prog && I.prog[1] ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${I.prog[0] / I.prog[1] * 100}%"></i></div>` : '';
+  const th = I.theory ? (s.subj === 'soc' ? `<button class="btn sm ghost pgo" data-a="socTheory" data-id="${esc(I.topic)}">Сначала теория</button>` : `<button class="btn sm ghost pgo" data-a="openTask" data-n="${I.n}">Сначала теория</button>`) : '';
+  return `<div class="pstep ${s.done ? 'done' : ''} ${cur ? 'cur' : ''}">
+    <span class="pchk" aria-hidden="true">${s.done ? ic('check', 20) : `<b>${s.i + 1}</b>`}</span>
+    <div class="pbody"><div class="parea"><span class="pslot">${esc(s.when)}</span> ${esc(I.area)}</div><div class="pttl">${esc(I.title)}</div>
+      ${s.done ? '' : cur ? `${I.prog ? `<div class="psub">Пройдено ${I.prog[0]} из ${I.prog[1]}${s.subj === 'ru' ? ' - идём до конца задания, потом следующее' : ''}.</div>` : ''}${bar}<div class="row" style="gap:8px"><button class="btn sm primary pgo" data-a="planGo" data-s="p${s.i}">${ic('play', 16)} ${PORTION} заданий</button>${th}</div>` : ''}
     </div></div>`;
 }
-/* под планом: орфография на каждый день и ошибки по предмету этого вечера */
-function orthoLineHTML(P) {
-  if (!P.steps.length || P.steps.some(s => s.id === 'exam')) return '';
-  const got = day(P.k).t?.['s:ortho'] || 0;
-  return got >= 10 ? `<div class="muted small" style="margin-top:6px">${ic('check', 14)} Орфография на сегодня сделана: ${got} ${plural(got, 'задание', 'задания', 'заданий')}.</div>`
-    : `<button class="linkbtn" data-a="orthoGo">Орфография каждый день: 10 заданий (9-15) - твоё слабое место ${ic('right', 16)}</button>`;
+function essRowHTML(e) {
+  return `<div class="pstep ess ${e.done ? 'done' : ''}">
+    <button class="pchk" data-a="planTick" data-s="${e.id}" aria-pressed="${e.done}" aria-label="${e.done ? 'Сделано' : 'Отметить: написала'}">${e.done ? ic('check', 20) : ''}</button>
+    <div class="pbody"><div class="parea"><span class="pslot">Выходные</span> ${e.id === 'mock' ? 'Пробник' : 'Сочинение недели · по желанию'}</div><div class="pttl">${esc(e.title)}</div>
+      ${e.done ? `<div class="psub">${e.id === 'mock' ? 'Пробник на этой неделе есть.' : 'На этой неделе сочинение есть - молодец!'}</div>` : `<div class="psub">${esc(e.sub)}</div><div class="row" style="gap:8px"><button class="btn sm pgo" data-a="planGo" data-s="${e.id}">${ic('pen', 16)} ${esc(e.go)}</button>${e.alt ? `<button class="btn sm ghost pgo" data-a="${e.alt[0]}">${esc(e.alt[1])}</button>` : ''}</div>`}
+    </div></div>`;
 }
-function errLineHTML(P, due) {
-  if (!due || P.ph.day === 'err') return '';
-  const ev = P.steps.find(s => s.si === 2)?.id, subj = ['ru', 'soc', 'en'].includes(ev) ? ev : null, n = subj ? errDue().filter(e => errGroup(e) === subj).length : 0;
-  return n ? `<button class="linkbtn" data-a="marathonSubj" data-s="${subj}">Если останутся силы: ошибки по предмету «${ERR_GROUPS[subj]}» - ${n} ${ic('right', 16)}</button>`
-    : `<button class="linkbtn" data-a="planGo" data-s="err">Если останутся силы: ошибки на сегодня - ${due} ${ic('right', 16)}</button>`;
+function specialHTML(sp) {
+  if (sp === 'review') return `<div class="pdone">${ic('book', 22)}<div><b>Завтра итоговое - сегодня только повторить</b><div class="small">Перечитай «Как писать» и «Кратко» своих книг, вспомни аргументы. Новое не учи. Паспорт, чёрная гелевая ручка, вода - с вечера.</div><button class="btn sm" data-a="planGo" data-s="review" style="margin-top:8px">Мои книги</button></div></div>`;
+  if (sp === 'exam') return `<div class="pdone">${ic('star', 22)}<div><b>Сегодня итоговое сочинение</b><div class="small">Вступление - два аргумента из книг - вывод, от 350 слов. Ты готовилась - всё получится!</div></div></div>`;
+  return '';
 }
 function planCardHTML(P) {
-  const n = P.steps.length, left = P.steps.filter(s => !s.done), nx = planNext(P), due = errDue().length;
-  return `<section class="card plan"><div class="row sb"><h2 class="h2">План на сегодня</h2><span class="kicker num">${P.done} из ${n}</span></div>
-    <div class="bar"><i style="width:${n ? P.done / n * 100 : 0}%"></i></div>
-    <div class="muted small">${left.length ? 'Утро - сочинение, день - чтение, вечер - лёгкое.' : 'Всё сделано - день засчитан!'} Вечера: ${eveLine}.</div>
-    <div>${P.steps.map(s => planStepHTML(s, s === nx)).join('')}</div>
-    ${finGoalHTML(P)}
-    ${left.length ? `<button class="linkbtn" data-a="five">Мало сил? ${MIN_N} заданий по русскому - 5 минут, день засчитан ${ic('right', 16)}</button>` : ''}
-    ${orthoLineHTML(P)}
-    ${errLineHTML(P, due)}
-    ${left.length ? '' : `<div class="pdone">${ic('star', 22)}<div><b>План дня выполнен!</b><div class="small">Завтра - следующие три шага.</div></div></div>`}
+  const nx = P.steps.find(s => !s.done), n = P.n;
+  const status = n >= NORM ? `Норма сделана${state.paid['norm:' + P.k] ? ': +100 ₽ уже в копилке' : ''}. Дальше - только если хочется.`
+    : n >= MIN_N ? `День засчитан! Ещё ${NORM - n} - и норма: +100 ₽ в копилку.`
+    : n ? `Ещё ${MIN_N - n} - и день засчитан.` : 'Три порции по 5 заданий - когда удобно: до уроков, на перемене, вечером. Одна порция - и день засчитан.';
+  return `<section class="card plan"><div class="row sb"><h2 class="h2">План на сегодня</h2><span class="kicker num">${Math.min(n, NORM)} из ${NORM}</span></div>
+    <div class="bar"><i style="width:${Math.min(1, n / NORM) * 100}%"></i></div>
+    <div class="muted small">${status}</div>
+    ${P.special ? specialHTML(P.special) : ''}
+    <div>${P.steps.map(s => portionHTML(P, s, s === nx)).join('')}</div>
+    ${!nx ? `<div class="row" style="gap:8px"><button class="btn sm" data-a="planGo" data-s="more">${ic('play', 16)} Ещё ${PORTION}</button></div>` : ''}
+    ${P.ess ? essRowHTML(P.ess) : ''}
     <button class="linkbtn" data-a="openPlan">Весь план до ЕГЭ ${ic('right', 16)}</button>
   </section>`;
 }
 function weekHTML() {
-  const t = today(), mon = addDays(t, -((D(t).getDay() + 6) % 7)), names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], st = planStreak();
+  const t = today(), mon = weekStart(t), names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], st = planStreak(), [bm, ba] = nextBonus(st);
   const cells = names.map((nm, i) => {
-    const k = addDays(mon, i), pl = state.days[k]?.pl, cls = k > t ? 'fut' : dayCounts(k) ? 'full' : pl && pl[1] === 0 ? 'rest' : (pl && pl[0]) || state.days[k]?.n ? 'part' : '';
+    const k = addDays(mon, i), pl = state.days[k]?.pl, cls = k > t ? 'fut' : dayCounts(k) ? 'full' : pl && pl[1] === 0 ? 'rest' : state.days[k]?.n ? 'part' : '';
     return `<div class="wd ${cls} ${k === t ? 'today' : ''}"><i>${cls === 'full' ? ic('check', 16) : D(k).getDate()}</i><span>${nm}</span></div>`;
   });
   return `<section class="card"><div class="row sb"><h2 class="h2">Неделя</h2><span class="chip fire">${ic('flame', 16)} ${st ? `${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : 'серия начнётся сегодня'}</span></div><div class="week">${cells.join('')}</div>
-    <p class="muted small" style="margin:0">День засчитан, если сделан план дня или хотя бы ${MIN_N} заданий.</p></section>`;
+    <p class="muted small" style="margin:0">День засчитан, если сделана хотя бы одна порция - ${MIN_N} заданий. ${st < bm ? `До бонуса +${ba} ₽ за серию - ещё ${bm - st} ${plural(bm - st, 'день', 'дня', 'дней')}.` : ''}</p></section>`;
 }
-/* «Где я сейчас»: по каждому предмету - на чём она и сколько пройдено */
-function nowHTML(ph) {
-  const pct = x => Math.round(x * 100) + '%', g = mainGift();
-  const row = (a, icon, cls, title, meta, val, p, style = '') => `<button class="prow" ${a}><span class="tnum ${cls}" style="${style}">${ic(icon, 22)}</span><span style="min-width:0"><span class="ttl">${title}</span><br><span class="tmeta">${meta}</span>${p != null ? `<span class="bar" style="display:block;height:6px;margin-top:6px"><i style="width:${p * 100}%"></i></span>` : ''}</span><span class="pts num">${val}</span></button>`;
-  const read = finReadWorks(), cov = finCovered().size, n = ruTopic(), pr = n ? ruProg(n) : null, tp = socNow(), sm = tp ? mastery('soc:' + tp.id) : null, s = enNow(), em = s ? mastery('en:' + s.id) : null;
-  return `<section class="card"><h2 class="h2">Где я сейчас</h2><div>
-    ${ph.id === 'p1' ? row('data-a="tab" data-t="final"', 'pen', '', 'Итоговое сочинение', `прочитано ${read.length} ${plural(read.length, 'книга', 'книги', 'книг')} · аргументы к ${cov} из ${FIN_T.length} тем`, pct(FIN_T.length ? cov / FIN_T.length : 0), FIN_T.length ? cov / FIN_T.length : 0) : ''}
-    ${n ? row(`data-a="openTask" data-n="${n}"`, 'book', 'theory', `Русский: задание ${n}`, `${esc(ruTask(n).title)} - пройдено ${pr.seen} из ${pr.total} · заданий позади: ${ruPassedList().length} из ${RU_PATH.length}`, `${pr.seen}/${pr.total}`, pr.total ? pr.seen / pr.total : 0)
-      : row('data-a="tab" data-t="ru"', 'book', 'theory', 'Русский', 'все задания пройдены - теперь вперемешку и пробники', pct(1), null)}
-    ${tp ? row(`data-a="openTopic" data-id="${esc(tp.id)}"`, 'scale', 'theory', 'Обществознание', `${esc(tp.title)} - пройдено ${sm.seen} из ${sm.total}`, `${sm.seen}/${sm.total}`, sm.total ? sm.seen / sm.total : 0) : ''}
-    ${s ? row(`data-a="openEn" data-id="${esc(s.id)}"`, 'globe', 'theory', 'Английский', `${esc(s.title)} - пройдено ${em.seen} из ${em.total}`, `${em.seen}/${em.total}`, em.total ? em.seen / em.total : 0) : ''}
-    ${row('data-a="openGifts"', 'gift', '', 'Копилка', g ? `на «${esc(g.title)}» - ${pct(Math.min(1, state.coins / g.cost))}` : 'добавь подарок, на который копишь', rub(state.coins), null, 'background:var(--gold-soft);color:var(--gold)')}
-  </div></section>`;
+/* быстрые тренировки - отдельной карточкой внизу главной (её просьба: не прятать в «Ещё») */
+function quickHTML() {
+  const un = errList().filter(e => !e.learned).length;
+  return `<section class="card"><h2 class="h2">Быстро, по 10</h2><div class="row"><button class="btn sm" data-a="orthoGo">Орфография</button><button class="btn sm" data-a="quick" data-k="stress">Ударения</button><button class="btn sm" data-a="startExcAll">Исключения</button><button class="btn sm" data-a="quick" data-k="mix">Вперемешку</button><button class="btn sm" data-a="quick" data-k="soc">Общество</button><button class="btn sm" data-a="quick" data-k="en">Английский</button></div>
+    <div class="row" style="gap:8px">${un ? `<button class="btn sm ghost" data-a="tab" data-t="err">${ic('note', 16)} Красная тетрадь: ${un}</button>` : ''}<button class="btn sm ghost" data-a="openWeak">${ic('star', 16)} Подтянуть</button><button class="btn sm ghost" data-a="goV" data-v="fav">Избранное</button></div></section>`;
 }
-function moreHTML() {
-  const un = errList().filter(e => !e.learned).length, lastEssay = state.essays[0]?.result?.total, open = ui.finOpen?.['home-more'];
-  return `<details class="more" data-fd="home-more" ${open ? 'open' : ''}><summary>Ещё: быстрые тренировки, обещания, вехи</summary><div class="stack">
-    <section class="card"><h2 class="h2">Для итогового</h2><div class="row"><button class="btn sm" data-a="planGo" data-s="para">Аргумент к теме</button><button class="btn sm" data-a="planGo" data-s="mybooks">Мои книги вперемешку</button><button class="btn sm" data-a="planGo" data-s="authors">Авторы моих книг</button><button class="btn sm" data-a="planGo" data-s="words">Слова к темам</button></div></section>
-    <section class="card"><h2 class="h2">Быстро, по 10</h2><div class="row"><button class="btn sm" data-a="orthoGo">10 по орфографии</button><button class="btn sm" data-a="quick" data-k="stress">10 ударений</button><button class="btn sm" data-a="startExcAll">10 исключений</button><button class="btn sm" data-a="quick" data-k="mix">10 вперемешку</button><button class="btn sm" data-a="quick" data-k="soc">10 по обществу</button><button class="btn sm" data-a="quick" data-k="en">10 по английскому</button></div>${un ? `<button class="btn block" data-a="tab" data-t="err">${ic('note', 18)} Красная тетрадь: ${un} ${plural(un, 'ошибка', 'ошибки', 'ошибок')}</button>` : ''}</section>
-    ${weakHomeCard()}
-    ${favRow()}
-    <section class="card"><h2 class="h2">Мои обещания на сегодня</h2><div>${promisesHTML()}</div></section>
-    ${planCard()}
-    <section class="card"><h2 class="h2">Путь к 100: русский по блокам</h2>
-      <p class="muted small" style="margin:0">100 баллов - это все 50 первичных: 28 за тест и 22 за сочинение. Цель для каждого блока - 90% и выше.</p>
-      ${BLOCK_MAP.map(([name, ns]) => { const p = blockPct(ns); return `<div class="blk"><div class="row sb small"><span>${name} <span class="muted">(${ns.length > 1 ? ns[0] + '-' + ns[ns.length - 1] : ns[0]})</span></span><span class="num">${Math.round(p * 100)}%</span></div><div class="bar ${p >= 0.9 ? '' : 'violet'}"><i style="width:${p * 100}%"></i></div></div>`; }).join('')}
-      <div class="blk"><div class="row sb small"><span>Сочинение <span class="muted">(27)</span></span><span class="num">${lastEssay != null ? lastEssay + ' из 22' : 'ещё не проверяли'}</span></div><div class="bar violet"><i style="width:${lastEssay != null ? lastEssay / 22 * 100 : 0}%"></i></div></div>
-    </section>
-    ${fipiCard()}
-  </div></details>`;
+/* «С возвращением»: за последние 5 дней день засчитан меньше чем 2 раза, сегодня ещё меньше MIN_N заданий, «Не сейчас» не нажато */
+function backCardHTML() {
+  const t = today(), d = state.days[t] || {};
+  if ((d.n || 0) >= MIN_N || d.pk?.backHide || !Object.keys(state.ans || {}).length) return '';
+  let good = 0; for (let i = 1; i <= 5; i++) if (dayCounts(addDays(t, -i))) good++;
+  if (good >= 2) return '';
+  return `<section class="card" style="border-left:5px solid var(--gold)"><h2 class="h2">С возвращением!</h2>
+    <p style="margin:0">Последние дни получалось мало - так бывает. Не догоняем всё сразу: одна порция - ${MIN_N} заданий по русскому, минут пять. Сделаешь - день засчитан, а дальше по силам.</p>
+    <div class="row"><button class="btn primary" data-a="five">${ic('play', 18)} ${MIN_N} заданий - начать</button><button class="btn sm ghost" data-a="backHide">Не сейчас</button></div></section>`;
+}
+/* упрямые ошибки: не выучены и ошибок STUB_MIN и больше - верный ответ на виду и прорешать отдельно */
+const STUB_MIN = 3;
+const stubList = () => errList().filter(e => !e.learned && (e.wrong || 0) >= STUB_MIN && getItem(e.id)).sort((a, b) => (b.wrong || 0) - (a.wrong || 0));
+function stubbornCardHTML(home) {
+  const L = stubList(); if (!L.length) return '';
+  const rows = L.slice(0, home ? 2 : 10).map(e => {
+    const it = getItem(e.id), tip = it.type === 'stress' && typeof STRESS_NOTE !== 'undefined' ? (STRESS_NOTE[it.w]?.[1] || '') : '';
+    return `<div class="stub"><div class="muted small">${esc(itemLabel(it))} · ошибок: ${e.wrong}</div><div class="stub-a">${e.my ? `<s>${esc(e.my)}</s> ${ic('right', 14)} ` : ''}<b>${esc(correctText(it))}</b></div>${tip ? `<div class="small">${md(tip)}</div>` : ''}</div>`;
+  }).join('');
+  const more = home && L.length > 2 ? `<button class="linkbtn" data-a="tab" data-t="err">Все упрямые: ${L.length} ${ic('right', 16)}</button>` : '';
+  return `<section class="card" style="border-left:5px solid var(--bad)"><div class="row sb"><h2 class="h2">Упрямые ошибки</h2><span class="kicker">${L.length}</span></div>
+    <p class="muted small" style="margin:0">Здесь ты ошибалась ${STUB_MIN} раза и больше. Прочитай верный ответ вслух - и сразу прорешай.</p>
+    <div>${rows}</div>${more}
+    <button class="btn block" data-a="stubGo">${ic('repeat', 18)} Прорешать упрямые: ${L.length}</button></section>`;
 }
 vHome = function () {
   const P = planToday(); planSnap(P);
@@ -290,24 +279,23 @@ vHome = function () {
   ${coverHTML()}
   ${backCardHTML()}
   ${planCardHTML(P)}
+  ${typeof notifyHomeHTML === 'function' ? notifyHomeHTML() : ''}
   ${stubbornCardHTML(true)}
-  ${nowHTML(P.ph)}
   ${weekHTML()}
-  ${moreHTML()}`;
+  ${quickHTML()}`;
 };
 
-/* ---- после тренировки: «ещё 15» и следующий шаг плана (по времени суток) ---- */
+/* ---- после тренировки: сколько сегодня, засчитан ли день, «Ещё 5» и к плану ---- */
 const vSesEnd0 = vSesEnd;
 vSesEnd = function () {
   const h = vSesEnd0(), P = planToday(); planSnap(P);
-  const more = ses?.key && /^(ru|ruE|soc|en):/.test(ses.key) && (ses.pool || []).length ? `<button class="btn sm" data-a="planMore">Ещё ${EVE_N}</button>` : '';
-  if (!P.steps.length) return more ? h + `<section class="card"><div class="row">${more}</div></section>` : h;
-  const nx = planNext(P);
-  return h + `<section class="card pnext">${nx ? `<div class="kicker">План дня · ${P.done} из ${P.steps.length}</div><div class="pttl">Дальше: ${esc(nx.title)}</div><div class="psub">${esc(nx.slot)} · ${esc(nx.area)}</div><div class="row">${planGoBtn(nx, true)}${more}<button class="btn sm" data-a="sesHome">К плану дня</button></div>`
-    : `<div class="pdone">${ic('star', 22)}<div><b>${P.done >= P.steps.length ? 'План дня выполнен!' : 'На сегодня хватит'}</b><div class="small">${P.done >= P.steps.length ? 'Все три шага сделаны - можно отдыхать.' : 'Вечер сделан. Отдыхай, завтра - следующие три шага.'}</div></div></div>${more ? `<div class="row">${more}<button class="btn sm" data-a="sesHome">К плану дня</button></div>` : ''}`}</section>`;
+  const more = ses?.pool?.length && !/Ещё \d/.test(h) ? `<button class="btn sm primary" data-a="planMore">${ic('play', 16)} Ещё ${PORTION}</button>` : '';
+  const n = P.n, title = n >= NORM ? 'Норма дня сделана!' : n >= MIN_N ? 'День засчитан!' : `Ещё ${MIN_N - n} - и день засчитан`;
+  const sub = n >= NORM ? 'Можно отдыхать - завтра новые порции.' : n >= MIN_N ? `Сегодня ${n} из ${NORM}. Ещё порция - когда будет минутка.` : 'Одна короткая порция - и серия продолжится.';
+  return h + `<section class="card pnext"><div class="kicker">План дня · ${Math.min(n, NORM)} из ${NORM}</div><div class="pttl">${title}</div><div class="psub">${sub}</div><div class="row">${more}<button class="btn sm" data-a="sesHome">К плану дня</button></div></section>`;
 };
 
-/* ---- экран «План до ЕГЭ» ---- */
+/* ================= экран «План до ЕГЭ» ================= */
 {
   const m3 = MILESTONES.find(m => m.id === 'm3'), m7 = MILESTONES.find(m => m.id === 'm7');
   if (m3) m3.t = 'Пробник русского: тест от 22 из 28 - первая ступенька к 80';
@@ -318,71 +306,158 @@ vSesEnd = function () {
   );
   MILESTONES.sort((a, b) => a.d.localeCompare(b.d));
 }
+function milestonesHTML() {
+  const t = today();
+  return MILESTONES.map(m => { const done = msDone(m), late = !done && m.d < t, p = m.pct ? Math.max(0, Math.min(1, m.pct())) : null; return `<div class="ms"><button class="chk ${done ? 'on' : ''}" style="border:0;padding:0;width:auto" data-a="msTog" data-id="${m.id}" aria-label="Отметить"><span class="box">${ic('check', 18)}</span></button><div style="min-width:0"><div style="font-weight:800;${done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.t)}</div>${p != null && !done ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${p * 100}%"></i></div>` : ''}</div><span class="when" style="${late ? 'color:var(--bad)' : ''}">до ${fmtD(m.d)}</span></div>`; }).join('');
+}
 vPlan = function () {
-  const t = today(), cur = planPhase(t), wd = D(t).getDay(), next = MILESTONES.find(m => !msDone(m)), cap = s => s[0].toUpperCase() + s.slice(1);
+  const t = today(), cur = planPhase(t), next = MILESTONES.find(m => !msDone(m));
   const read = finReadWorks(), cov = finCovered().size, nx = finNextWork(), gain = nx && !finReadOf(nx.id) ? finGain(nx) : 0;
-  const eve = `<table class="tbl wrap ptbl"><tbody>${[1, 2, 3, 4, 5, 6, 0].map(i => `<tr class="${i === wd ? 'on' : ''}"><td>${cap(WD[i])}</td><td>вечер - ${PLAN_EVE_NAMES[PLAN_EVE[i]]}${i === 6 && cur.sat ? ' · утром пробник' : ''}</td></tr>`).join('')}</tbody></table>`;
-  const nRu = ruTopic(), ruDone = ruPassedList().length, open = id => ui.finOpen?.[id] ? 'open' : '';
+  const nRu = ruTopic(), ruDone = ruPassedList().length, open = id => ui.finOpen?.[id] ? 'open' : '', soc = socNow();
   const prow = (a, mark, cls, title, meta, val) => `<button class="prow" ${a}><span class="tnum ${cls}" style="font-size:16px">${mark}</span><span style="min-width:0"><span class="ttl">${title}</span><br><span class="tmeta">${meta}</span></span><span class="pts num">${val}</span></button>`;
   const ruRow = n => { const T = ruTask(n), ok = ruPassed(n), now = n === nRu, p = ruProg(n); return prow(`data-a="openTask" data-n="${n}"`, ok ? ic('check', 20) : n, ok ? 'done' : now ? '' : 'theory', esc(T.title), `задание ${n}${ok ? (ruP(n).done && p.seen < p.total ? ' · отмечено «уже знаю»' : ' · пройдено') : now ? ' · сейчас' : ''}`, `${p.seen}/${p.total}`); };
-  const socRows = SOC_ORDER().map(x => { const m = mastery('soc:' + x.id), now = socNow()?.id === x.id, ok = m.total && m.seen >= m.total; return prow(`data-a="openTopic" data-id="${esc(x.id)}"`, ok ? ic('check', 20) : ic('scale', 20), ok ? 'done' : now ? '' : 'theory', esc(x.title), now ? 'сейчас' : ok ? 'пройдено' : 'дальше', `${m.seen}/${m.total}`); }).join('');
-  const enRows = EN_LIST().map(x => { const m = mastery('en:' + x.id), now = enNow()?.id === x.id, ok = m.total && m.seen >= m.total; return prow(`data-a="openEn" data-id="${esc(x.id)}"`, ok ? ic('check', 20) : ic('globe', 20), ok ? 'done' : now ? '' : 'theory', esc(x.title), now ? 'сейчас' : ok ? 'пройдено' : 'дальше', `${m.seen}/${m.total}`); }).join('');
+  const socRows = SOC_ORDER().map(x => { const m = mastery('soc:' + x.id), now = soc?.id === x.id, ok = m.total && m.seen >= m.total; return prow(`data-a="openTopic" data-id="${esc(x.id)}"`, ok ? ic('check', 20) : ic('scale', 20), ok ? 'done' : now ? '' : 'theory', esc(x.title), now ? 'сейчас' : ok ? 'пройдено' : 'дальше', `${m.seen}/${m.total}`); }).join('');
+  const enRows = EN_LIST().map(x => { const m = mastery('en:' + x.id), ok = m.total && m.seen >= m.total; return prow(`data-a="openEn" data-id="${esc(x.id)}"`, ok ? ic('check', 20) : ic('globe', 20), ok ? 'done' : 'theory', esc(x.title), ok ? 'пройдено' : 'по желанию', `${m.seen}/${m.total}`); }).join('');
   return `<button class="back" data-a="back">${ic('left', 18)} Назад</button>
-  <header class="stack" style="gap:6px"><div class="kicker">Цель - 100, минимум 80+</div><h1 class="h1">План до ЕГЭ</h1><p class="muted" style="margin:0">Каждый день три шага под твой режим: утром сочинение, днём книга, вечером 15 лёгких заданий. Сочинение и чтение отмечаешь сама - кружок слева, вечер отмечается сам.</p></header>
-  <section class="card" style="border-left:5px solid var(--rose)"><div class="kicker">Сейчас · ${esc(cur.when)}</div><h2 class="h2">${esc(cur.name)}</h2>
-    <p style="margin:0"><b>Утро, около 9:00 - сочинение.</b> ${cur.morning === 'fin' ? 'Итоговое: тема дня подобрана к твоим книгам, от 350 слов. Не та тема - «Другая тема».' : 'Сочинение ЕГЭ по тексту (задание 27), от 150 слов.'}${cur.sat ? ' В субботу утром вместо него - пробник.' : ''}</p>
-    <p style="margin:0"><b>День - ${cur.day === 'err' ? 'ошибки' : 'чтение'}.</b> ${cur.day === 'err' ? 'Красная тетрадь: что ещё не выучено.' : 'Книга для сочинения. Читаешь не за один день - кружок «почитала»; дочитала - «Прочитала» в карточке и короткий тест.'}</p>
-    <p style="margin:0"><b>Вечер - лёгкое.</b> 15 заданий одного предмета, твои ошибки по нему повторяются сами:</p>${eve}
-    <p class="muted small" style="margin:0">${esc(cur.focus)}${cur.id === 'p1' ? ' 1 декабря - только повторить свои книги, 2 декабря - итоговое сочинение.' : ''}</p></section>
+  <header class="stack" style="gap:6px"><div class="kicker">Цель - 100, минимум 80+</div><h1 class="h1">План до ЕГЭ</h1><p class="muted" style="margin:0">Каждый день - норма ${NORM} заданий тремя порциями по ${PORTION}: до уроков, на перемене, вечером - когда удобно. Одна порция - и день засчитан. Русский - главный, во вторник, четверг и субботу третья порция - обществознание. В выходные - сочинение недели, по желанию.</p></header>
+  <section class="card" style="border-left:5px solid var(--rose)"><div class="kicker">Сейчас · ${esc(cur.when)}</div><h2 class="h2">${esc(cur.name)}</h2><p style="margin:0">${esc(cur.focus)}</p></section>
   <section class="card"><div class="row sb"><h2 class="h2">Русский по заданиям</h2><span class="kicker">${ruDone} из ${RU_PATH.length}</span></div>
-    <p class="muted small" style="margin:0">Идём по порядку: задание - сначала теория, потом все его задания до конца, ошибки повторяются сами. ${nRu ? `Сейчас - задание ${nRu}, «${esc(ruTask(nRu).title)}».` : 'Все задания пройдены!'} Хочешь другое - открой его и нажми «Прочитала - закрепить»: оно станет заданием плана.</p>
+    <p class="muted small" style="margin:0">Идём по порядку: задание - сначала теория, потом все его задания до конца, ошибки повторяются сами. ${nRu ? `Сейчас - задание ${nRu}, «${esc(ruTask(nRu).title)}».` : 'Все задания пройдены!'} Хочешь другое - открой его и нажми «Прочитала - закрепить».</p>
     <div class="bar"><i style="width:${ruDone / RU_PATH.length * 100}%"></i></div>
     ${nRu ? ruRow(nRu) : ''}
     <details class="fbd" data-fd="ru-path" ${open('ru-path')}><summary>Все задания по порядку</summary><div>${RU_PATH.filter(n => ruTask(n)).map(ruRow).join('')}</div></details></section>
-  <section class="card"><h2 class="h2">Обществознание по темам</h2><p class="muted small" style="margin:0">Вторник и суббота вечером. Тема за темой: сначала теория, потом вопросы, пока не пройдёшь все.</p><div>${socRows}</div></section>
-  <section class="card"><h2 class="h2">Английский по разделам</h2><p class="muted small" style="margin:0">Четверг и воскресенье вечером: грамматика, словообразование, лексика, потом чтение и аудирование.</p><div>${enRows}</div></section>
+  <section class="card"><h2 class="h2">Обществознание по темам</h2><p class="muted small" style="margin:0">Вторник, четверг и суббота - вечерняя порция. Сначала «Конституция и власть» и право, потом остальные темы.</p><div>${socRows}</div></section>
   ${cur.id === 'p1' ? `<section class="card"><h2 class="h2">Книги для итогового</h2>
     <div class="blk"><div class="row sb small"><span>Темы, к которым у тебя есть аргументы</span><span class="num">${cov} из ${FIN_T.length}</span></div><div class="bar"><i style="width:${FIN_T.length ? cov / FIN_T.length * 100 : 0}%"></i></div></div>
     <p class="muted small" style="margin:0">${read.length ? `Прочитано: ${read.map(w => `«${esc(w.title)}»`).join(', ')}.` : 'Отмечай прочитанные книги - здесь будет видно, к каким темам хватает аргументов.'} На сочинении хватит 4-5 книг, которые знаешь хорошо.</p>
     ${nx ? `<button class="btn block" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} ${finReadOf(nx.id) ? 'Закрепить' : 'Следующая'}: «${esc(nx.title)}»${gain ? ` (+${gain} ${plural(gain, 'тема', 'темы', 'тем')})` : ''}</button>` : ''}</section>` : ''}
+  <section class="card"><h2 class="h2">Английский по разделам</h2><p class="muted small" style="margin:0">Пока по желанию - в план дня не входит.</p><div>${enRows}</div></section>
   <section class="card"><h2 class="h2">Этапы до экзамена</h2><div>${PLAN_PHASES.map(ph => { const now = ph === cur, past = t > ph.to; return `<div class="ph ${now ? 'now' : past ? 'past' : ''}"><span class="phd">${past ? ic('check', 14) : ''}</span><div style="min-width:0"><div class="row sb"><b>${esc(ph.name)}</b>${now ? '<span class="chip fire">сейчас</span>' : ''}</div><div class="muted small">${esc(ph.when)}</div>${now ? '' : `<p class="small" style="margin:4px 0 0">${esc(ph.focus)}</p>`}</div></div>`; }).join('')}</div></section>
-  <section class="card"><h2 class="h2">Вехи</h2><div>${MILESTONES.map(m => { const done = msDone(m), late = !done && m.d < t, p = m.pct ? Math.max(0, Math.min(1, m.pct())) : null; return `<div class="ms"><button class="chk ${done ? 'on' : ''}" style="border:0;padding:0;width:auto" data-a="msTog" data-id="${m.id}" aria-label="Отметить"><span class="box">${ic('check', 18)}</span></button><div style="min-width:0"><div style="font-weight:800;${done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.t)}</div>${p != null && !done ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${p * 100}%"></i></div>` : ''}</div><span class="when" style="${late ? 'color:var(--bad)' : ''}">до ${fmtD(m.d)}</span></div>`; }).join('')}</div></section>
+  <section class="card"><h2 class="h2">Вехи</h2><div>${milestonesHTML()}</div></section>
   <section class="card"><h2 class="h2">Сколько нужно на 80+ и на 100</h2><p style="margin:0">100 баллов по русскому - это все <b>50 первичных</b>: 28 за тестовую часть и 22 за сочинение. <b>80 баллов - около 43 первичных</b>, например тест 25 из 28 и сочинение 18 из 22. 90 - около 47. Шкала 2026 года, примерно.</p><p class="muted small" style="margin:0">Итоговое сочинение - это зачёт или незачёт: допуск к ЕГЭ, баллы за него не ставят.</p></section>
   ${next ? '' : '<section class="card celebrate"><div class="h2">Все вехи взяты!</div></section>'}`;
 };
 
-/* ---- действия ---- */
+/* ================= вкладка «Копилка» - кабинет ================= */
+const pctS = x => Math.round(x * 100) + '%';
+/* «было -> стало»: по каждой теме - первые ответы против последних (по датам), если ответов хотя бы 12 */
+const growKey = it => it.subj === 'ru' && it.task ? 'ru:' + it.task : it.subj === 'soc' ? 'soc:' + it.task : it.subj === 'en' ? 'en:' + it.task : it.subj === 'fin' ? 'fin' : null;
+function growName(k) {
+  const [s, t] = k.split(':');
+  if (s === 'ru') { const T = ruTask(+t); return `Задание ${t}${T ? ': ' + T.title : ''}`; }
+  if (s === 'soc') return `Общество: ${socTopic(t)?.title || t}`;
+  if (s === 'en') return `Английский: ${enSec(t)?.title || t}`;
+  return 'Книги для итогового';
+}
+function growthRows() {
+  const by = {};
+  for (const [id, arr] of Object.entries(state.ans || {})) { const it = getItem(id), k = it && growKey(it); if (!k) continue; for (const x of arr) (by[k] = by[k] || []).push(x); }
+  const rows = [];
+  for (const [k, L] of Object.entries(by)) {
+    if (L.length < 12) continue;
+    L.sort((a, b) => a[0].localeCompare(b[0]));
+    const m = Math.min(10, Math.floor(L.length / 2)), avg = A => A.reduce((s, x) => s + (x[1] ? 1 : 0), 0) / A.length;
+    rows.push({ k, p1: avg(L.slice(0, m)), p2: avg(L.slice(-m)), n: L.length, m, d1: L[0][0], d2: L[L.length - 1][0] });
+  }
+  return rows.sort((a, b) => (b.p2 - b.p1) - (a.p2 - a.p1) || b.n - a.n);
+}
+function growthHTML() {
+  const R = growthRows().slice(0, 6);
+  if (!R.length) return `<section class="card"><h2 class="h2">Было → стало</h2><p class="muted small" style="margin:0">Появится, когда по какой-нибудь теме будет хотя бы 12 ответов.</p></section>`;
+  return `<section class="card"><h2 class="h2">Было → стало</h2>
+    ${R.map(r => { const up = r.p2 - r.p1; return `<div class="grow"><div class="row sb small"><b style="min-width:0">${esc(growName(r.k))}</b><span class="num ${up > 0.04 ? 'up' : up < -0.04 ? 'down' : ''}">${pctS(r.p1)} → ${pctS(r.p2)}</span></div><div class="gbars"><i style="width:${r.p1 * 100}%"></i><i class="now" style="width:${r.p2 * 100}%"></i></div></div>`; }).join('')}
+    <details class="fbd"><summary>i - как посчитано</summary><p class="small" style="margin:0">«Было» - доля верных среди твоих первых ответов по теме (до 10 штук), «стало» - среди последних (до 10). Берутся темы, где ответов хотя бы 12. Порядок - по датам ответов.</p></details></section>`;
+}
+function calHTML() {
+  const t = today(), mon = addDays(weekStart(t), -28), names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], cells = [];
+  for (let i = 0; i < 35; i++) { const k = addDays(mon, i), n = state.days[k]?.n || 0, lv = k > t ? 'fut' : n >= NORM ? 'l3' : n >= MIN_N ? 'l2' : n ? 'l1' : ''; cells.push(`<i class="${lv} ${k === t ? 'today' : ''}" title="${fmtD(k)}: ${n}"></i>`); }
+  const active = Object.values(state.days || {}).filter(d => d.n > 0).length;
+  return `<section class="card"><div class="row sb"><h2 class="h2">Активность</h2><span class="kicker">${active} ${plural(active, 'день', 'дня', 'дней')} с занятиями</span></div>
+    <div class="cal"><div class="cal-h">${names.map(x => `<span>${x}</span>`).join('')}</div><div class="cal-g">${cells.join('')}</div></div>
+    <div class="cal-l small muted"><span><i class="l1"></i> 1-4</span><span><i class="l2"></i> 5-14 - день засчитан</span><span><i class="l3"></i> 15+ - норма</span></div></section>`;
+}
+function doneHTML() {
+  const days = Object.values(state.days || {}), all = days.reduce((s, d) => s + (d.n || 0), 0), ok = days.reduce((s, d) => s + (d.ok || 0), 0);
+  const errs = errList(), learned = errs.filter(e => e.learned).length, read = finReadWorks().length;
+  const socDone = SOC_ORDER().filter(x => { const m = mastery('soc:' + x.id); return m.total && m.seen >= m.total; }).length;
+  const tile = (v, l) => `<div class="tile"><b class="num">${v}</b><span>${l}</span></div>`;
+  return `<section class="card"><h2 class="h2">Что уже сделано</h2><div class="tiles">
+    ${tile(all, `${plural(all, 'ответ', 'ответа', 'ответов')} всего`)}${tile(all ? pctS(ok / all) : '-', 'верных')}
+    ${tile(`${learned} из ${errs.length}`, 'ошибок выучено')}${tile(`${ruPassedList().length} из ${RU_PATH.length}`, 'заданий русского пройдено')}
+    ${tile(`${socDone} из ${SOC_ORDER().length}`, 'тем общества пройдено')}${tile(read, `${plural(read, 'книга', 'книги', 'книг')} для итогового`)}
+    ${tile(bestStreak(), 'лучшая серия, дней')}${tile(finEssDays().length, 'сочинений написано')}
+  </div></section>`;
+}
+function bankHeroHTML() {
+  const g = mainGift(), pd = perDay(), wk = state.ledger.filter(x => x.amt > 0 && x.d >= addDays(today(), -6)).reduce((s, x) => s + x.amt, 0);
+  let eta = '';
+  if (g && state.coins < g.cost) { const days = Math.ceil((g.cost - state.coins) / Math.max(pd, 1)); eta = `При таком темпе - примерно к ${fmtD(addDays(today(), days))}.`; }
+  return `<section class="card bank"><div class="row sb"><div><div class="coin">${rub(state.coins)}</div><div class="muted small">заработано всего ${rub(state.earned || 0)}</div></div><span class="chip ${wk ? 'fire' : ''}">+${rub(wk)} за 7 дней</span></div>
+    ${g ? `<div class="blk"><div class="row sb"><b>${ic('star', 16)} ${esc(g.title)}</b><span class="num muted small">${pctS(Math.min(1, state.coins / g.cost))}</span></div><div class="bar gold" style="height:14px"><i style="width:${Math.min(100, state.coins / g.cost * 100)}%"></i></div><p class="small" style="margin:0">${state.coins >= g.cost ? '<b>Хватает! Можно покупать.</b>' : `Осталось ${rub(g.cost - state.coins)}. ${eta}`}</p></div>` : '<p class="muted" style="margin:0">Добавь подарок, на который копишь (ниже).</p>'}
+    <details class="fbd"><summary>i - как посчитан темп</summary><p class="small" style="margin:0">Сумма, что пришла в копилку за последние 14 дней, делённая на 14. Если за эти дни занималась меньше трёх дней, считаю по 300 ₽ в день.</p></details></section>`;
+}
+function streakCardHTML() {
+  const s = planStreak(), best = bestStreak(), [bm, ba] = nextBonus(s);
+  return `<section class="card"><div class="row sb"><h2 class="h2">Серия</h2><span class="chip fire">${ic('flame', 16)} ${s} ${plural(s, 'день', 'дня', 'дней')}</span></div>
+    <p style="margin:0">${s ? `Ты занимаешься ${s} ${plural(s, 'день', 'дня', 'дней')} подряд.` : 'Серия начнётся с первой порции - 5 заданий.'} Ещё ${bm - s} ${plural(bm - s, 'день', 'дня', 'дней')} - и <b>+${ba} ₽</b>. Лучшая серия - ${best} ${plural(best, 'день', 'дня', 'дней')}.</p>
+    <div class="sers">${STREAK_BONUS.map(([m, amt]) => `<div class="ser ${s >= m ? 'on' : ''}"><b>${m}</b><span>${plural(m, 'день', 'дня', 'дней')}</span><em>+${amt} ₽</em></div>`).join('')}</div>
+    <p class="muted small" style="margin:0">День засчитан, если решено хотя бы ${MIN_N} заданий. Бонус - один раз за каждую серию.</p></section>`;
+}
+function nowCabHTML() {
+  const pct = x => Math.round(x * 100) + '%';
+  const row = (a, icon, cls, title, meta, val, p) => `<button class="prow" ${a}><span class="tnum ${cls}">${ic(icon, 22)}</span><span style="min-width:0"><span class="ttl">${title}</span><br><span class="tmeta">${meta}</span>${p != null ? `<span class="bar" style="display:block;height:6px;margin-top:6px"><i style="width:${p * 100}%"></i></span>` : ''}</span><span class="pts num">${val}</span></button>`;
+  const read = finReadWorks(), cov = finCovered().size, n = ruTopic(), pr = n ? ruProg(n) : null, tp = socNow(), sm = tp ? mastery('soc:' + tp.id) : null;
+  return `<section class="card"><h2 class="h2">Где я сейчас</h2><div>
+    ${row('data-a="tab" data-t="final"', 'pen', '', 'Итоговое сочинение', `прочитано ${read.length} ${plural(read.length, 'книга', 'книги', 'книг')} · аргументы к ${cov} из ${FIN_T.length} тем`, pct(FIN_T.length ? cov / FIN_T.length : 0), FIN_T.length ? cov / FIN_T.length : 0)}
+    ${n ? row(`data-a="openTask" data-n="${n}"`, 'book', 'theory', `Русский: задание ${n}`, `${esc(ruTask(n).title)} - пройдено ${pr.seen} из ${pr.total}`, `${pr.seen}/${pr.total}`, pr.total ? pr.seen / pr.total : 0) : row('data-a="tab" data-t="ru"', 'book', 'theory', 'Русский', 'все задания пройдены', pct(1), null)}
+    ${tp ? row(`data-a="openTopic" data-id="${esc(tp.id)}"`, 'scale', 'theory', 'Обществознание', `${esc(tp.title)} - пройдено ${sm.seen} из ${sm.total}`, `${sm.seen}/${sm.total}`, sm.total ? sm.seen / sm.total : 0) : ''}
+  </div></section>`;
+}
+const vGiftsCab0 = vGifts;
+vGifts = function () {
+  const base = vGiftsCab0(), at = base.indexOf('<section class="card"><h2 class="h2">На что коплю');
+  let rest = at >= 0 ? base.slice(at) : '';
+  const bonusRows = STREAK_BONUS.map(([m, amt]) => `<tr><td>Серия ${m} ${plural(m, 'день', 'дня', 'дней')} подряд (хотя бы ${MIN_N} заданий в день)</td><td>+${amt} ₽</td></tr>`).join('');
+  rest = rest.replace('<tr><td>Сочинение, проверенное по критериям', bonusRows + '<tr><td>Сочинение, проверенное по критериям');
+  const pd = perDay(), wkPace = Math.round(pd * 7 / 10) * 10;
+  rest = rest.replace('Если заниматься каждый день по 20-30 минут, выходит около 8-10 тысяч в месяц.', `По твоему темпу за последние 2 недели - около ${rub(wkPace)} в неделю.`);
+  return `${ui.stack.length ? `<button class="back" data-a="back">${ic('left', 18)} Назад</button>` : ''}<header class="stack" style="gap:4px;padding-top:6px"><div class="kicker">Мой кабинет</div><h1 class="h1">Копилка</h1><p class="muted" style="margin:0">Что ты уже сделала, сколько заработала и что получишь дальше. Деньги - твои: честно заработала учёбой.</p></header>
+  ${bankHeroHTML()}
+  ${streakCardHTML()}
+  ${doneHTML()}
+  ${growthHTML()}
+  ${calHTML()}
+  ${nowCabHTML()}
+  ${typeof notifyCardHTML === 'function' ? notifyCardHTML() : ''}
+  <section class="card"><h2 class="h2">Мои обещания на сегодня</h2><div>${promisesHTML()}</div></section>
+  <section class="card"><div class="row sb"><h2 class="h2">Вехи</h2><button class="linkbtn inl" data-a="openPlan">весь план</button></div><div>${milestonesHTML()}</div></section>
+  ${rest}`;
+};
+
+/* ================= действия ================= */
 Object.assign(A, {
   planGo: b => {
     const id = b.dataset.s, start = (k, n = 10, title) => { const pool = TASK_ITEMS[k] || []; if (pool.length) startPool(title || keyTitle(k), pool, n, { key: k }); else toast('Здесь пока нечего решать'); };
-    if (id === 'fin') { const tp = essTopic(today(), day()); if (tp) A.finWrite({ dataset: { id: tp.id } }); else { finRemember('write'); go({ v: 'final', sub: 'write', part: 'full' }); } }
+    const m = /^p([012])$/.exec(id || '');
+    if (m) startPortion(portionSubj(today(), +m[1]));
+    else if (id === 'more') startPortion('ru'); // норма сделана, хочется ещё - русский
+    else if (id === 'fin') { const tp = essTopic(today(), day()); if (tp) A.finWrite({ dataset: { id: tp.id } }); else { finRemember('write'); go({ v: 'final', sub: 'write', part: 'full' }); } }
     else if (id === 'ess27') A.continue({ dataset: { p: '2' } });
     else if (id === 'mock') startMock();
-    else if (id === 'book') {
-      const w = finWork(b.dataset.w) || planBook(); if (!w) return;
-      if (!finReadOf(w.id)) { state.planBook = w.id; save(); A.finWork({ dataset: { id: w.id } }); } else A.finWorkQuiz({ dataset: { id: w.id } });
-    }
     else if (id === 'err') startMarathon();
-    else if (id === 'ru') {
-      const n = ruTopic(); if (!n) { startMix(EVE_N); return; }
-      if (ruTheoryOk(n)) ruPractice(n); else go({ v: 'task', n, sub: 'theory' });
-    }
-    else if (id === 'soc') { const tp = socNow(); if (tp) start('soc:' + tp.id, EVE_N, `Общество: ${tp.title}`); }
-    else if (id === 'en') { const s = enNow(); if (s) start('en:' + s.id, EVE_N, `Английский: ${s.title}`); }
     else if (id === 'review') { finRemember('works'); go({ v: 'final', sub: 'works' }); }
-    /* то, что раньше было шагами плана, - теперь в «Ещё» на главной */
     else if (id === 'para') A.finParaMine();
     else if (id === 'authors') { finMinePools(); start((TASK_ITEMS['fin:nmine'] || []).length ? 'fin:nmine' : 'fin:n'); }
     else if (id === 'words') start('fin:v');
     else if (id === 'mybooks') { finMinePools(); start((TASK_ITEMS['fin:mine'] || []).length ? 'fin:mine' : 'fin:all'); }
   },
+  /* кружок у сочинения недели (бумага) - отмечает она сама */
   planTick: b => {
-    const id = b.dataset.s, s = planToday().steps.find(x => x.id === id); if (!s) return;
-    if (s.auto) { toast(s.si === 2 ? `Уже сделано: ${EVE_N} заданий решены` : 'Уже сделано'); return; }
+    const id = b.dataset.s, e = planToday().ess; if (!e || e.id !== id) return;
     const d = day(), m = d.m = d.m || {}; if (m[id]) delete m[id]; else m[id] = 1;
-    save(); render(); toast(m[id] ? 'Отмечено: сделано' : 'Отметка снята');
+    save(); render(); toast(m[id] ? 'Отмечено: написала' : 'Отметка снята');
   },
-  planMore: () => { if (ses?.pool?.length) startPool(ses.title, ses.pool, EVE_N, ses.key ? { key: ses.key } : {}); },
+  planMore: () => { if (ses?.pool?.length) startPool(ses.title, ses.pool, PORTION, ses.key ? { key: ses.key } : {}); },
   essNew: () => {
     const d = day(), cur = d.pk?.essT, all = essCands().filter(t => t.id !== cur), fresh = all.filter(t => !state.essT?.[t.id]), L = fresh.length ? fresh : all;
     const t = L[Math.floor(Math.random() * L.length)]; if (!t) return;
@@ -391,7 +466,13 @@ Object.assign(A, {
   socTheory: b => go({ v: 'topic', id: b.dataset.id, sub: 'theory' }),
   bookQuiz: b => { if (finWork(b.dataset.id)) A.finWorkQuiz({ dataset: { id: b.dataset.id } }); },
   enTheory: b => go({ v: 'ensec', id: b.dataset.id }),
+  five: () => { const P = planToday(), nx = P.steps.find(s => !s.done); startPortion(nx ? nx.subj : 'ru'); },
+  backHide: () => { const d = day(); d.pk = { ...(d.pk || {}), backHide: 1 }; save(); render(); },
+  stubGo: () => { const ids = stubList().map(e => e.id); if (ids.length) startPool('Упрямые ошибки', ids, ids.length); },
+  goV: b => go({ v: b.dataset.v }),
 });
+/* написала сочинение на тему дня - тема уходит в «уже писала», в следующий раз будет другая */
+{ const vH = vHome; vHome = function () { const d = day(), et = d.pk?.essT; if (et && (d.w?.full || d.m?.fin) && !state.essT?.[et]) { state.essT = { ...(state.essT || {}), [et]: today() }; save(); } return vH(); }; }
 
 /* ---- экран задания, вкладка «Теория»: внизу - «Прочитала - закрепить»; это задание становится заданием плана ---- */
 const vTask0 = vTask;
@@ -402,7 +483,7 @@ vTask = function (r) {
   const th = ruP(T.n).th, inPath = ruTopic() === T.n, p = ruProg(T.n);
   return h + `<section class="card" style="border-left:5px solid var(--violet)">
     <h2 class="h2">${th ? 'Закрепить тему' : 'Прочитала теорию?'}</h2>
-    <p class="muted small" style="margin:0">${th ? `Теорию ты прочитала ${fmtD(th)}. ` : ''}Сразу закрепи: ${EVE_N} заданий только по этой теме (пройдено ${p.seen} из ${p.total}). Ошибки уйдут в красную тетрадь - повторятся сами.${inPath ? ' Это задание плана.' : ' После этого оно станет заданием плана на вечер.'}</p>
+    <p class="muted small" style="margin:0">${th ? `Теорию ты прочитала ${fmtD(th)}. ` : ''}Сразу закрепи: ${PORTION} заданий только по этой теме (пройдено ${p.seen} из ${p.total}). Ошибки уйдут в красную тетрадь - повторятся сами.${inPath ? ' Это задание плана.' : ' После этого оно станет заданием плана.'}</p>
     <button class="btn primary block" data-a="ruLearn" data-n="${T.n}">${ic('play', 18)} Прочитала - закрепить</button></section>`;
 };
 Object.assign(A, {
@@ -415,11 +496,10 @@ Object.assign(A, {
 /* «По теме» на экране задания - с ключом темы: в конце видно, сколько осталось, а план засчитывает ответы */
 A.startTask = b => ruPractice(+b.dataset.n);
 
-/* ---- орфография каждый день ---- */
+/* ---- орфография: 10 заданий из 9-15 вперемешку ---- */
 A.orthoGo = () => startPool('Орфография: задания 9-15', orthoPool(), 10, { key: 'ortho' });
 
-/* ---- марафон ошибок по предметам (её просьба 03.11.2026: «где-то ошибки по русскому, где-то по обществу,
-   где-то по английскому - чтобы не всё одним») ---- */
+/* ---- марафон ошибок по предметам (её просьба 03.11.2026: «чтобы не всё одним») ---- */
 const ERR_GROUPS = { ru: 'русский', soc: 'обществознание', en: 'английский', fin: 'книги и итоговое', other: 'другое' };
 const errGroup = e => ERR_GROUPS[e.subj] ? e.subj : 'other';
 const startMarathon0 = startMarathon;
@@ -437,72 +517,10 @@ const vErr0 = vErr;
 vErr = function () {
   const h = vErr0(), due = errDue(), un = errList().filter(e => !e.learned);
   const rows = Object.keys(ERR_GROUPS).map(g => ({ g, d: due.filter(e => errGroup(e) === g).length, u: un.filter(e => errGroup(e) === g).length })).filter(x => x.u);
-  if (!rows.length) return h;
-  const card = `<section class="card"><h2 class="h2">Марафон по предметам</h2><p class="muted small" style="margin:0">Повторяй ошибки одного предмета - так легче держать правило в голове.</p>
-    <div class="stack" style="gap:8px">${rows.map(x => `<button class="btn block ${x.d ? '' : 'ghost'}" data-a="marathonSubj" data-s="${x.g}" ${x.d ? '' : 'disabled'}>${ic('repeat', 18)} ${ERR_GROUPS[x.g][0].toUpperCase() + ERR_GROUPS[x.g].slice(1)}: ${x.d ? `на сегодня ${x.d}` : 'на сегодня всё'} <span class="muted small">· учим ${x.u}</span></button>`).join('')}</div></section>`;
+  const card = rows.length ? `<section class="card"><h2 class="h2">Марафон по предметам</h2><p class="muted small" style="margin:0">Повторяй ошибки одного предмета - так легче держать правило в голове.</p>
+    <div class="stack" style="gap:8px">${rows.map(x => `<button class="btn block ${x.d ? '' : 'ghost'}" data-a="marathonSubj" data-s="${x.g}" ${x.d ? '' : 'disabled'}>${ic('repeat', 18)} ${ERR_GROUPS[x.g][0].toUpperCase() + ERR_GROUPS[x.g].slice(1)}: ${x.d ? `на сегодня ${x.d}` : 'на сегодня всё'} <span class="muted small">· учим ${x.u}</span></button>`).join('')}</div></section>` : '';
+  const ins = card + stubbornCardHTML(false);
+  if (!ins) return h;
   const at = h.indexOf('<section class="stack">');
-  return at >= 0 ? h.slice(0, at) + card + h.slice(at) : h + card;
+  return at >= 0 ? h.slice(0, at) + ins + h.slice(at) : h + ins;
 };
-
-/* ================= 15.11.2026: доработки после перерыва =================
-   Её просьба: «повтори всё и внеси доработки», цель - «на 100 и 80 плюс», итоговое - 2 декабря.
-   По её данным: с 9 ноября почти не занималась (за неделю 13 заданий), сочинение целиком отмечено одно (7 ноября),
-   «освЕдомиться» - 7 ошибок. Поэтому:
-   1) «С возвращением»: за последние 5 дней минимум (MIN_N заданий или план) был меньше чем в 2 днях - старт на 5 минут, без упрёков.
-   2) «5 минут» под планом всегда; день с MIN_N заданиями засчитывается в серию (dayCounts, planStreak).
-   3) До итогового: сколько сочинений целиком уже написано, цель - ESS_GOAL к 2 декабря.
-   4) «Упрямые ошибки»: ошибалась STUB_MIN раза и больше - верный ответ на виду и прорешать отдельно. */
-const ESS_GOAL = 5;
-const STUB_MIN = 3;
-/* сочинения итогового целиком: дни, когда в поле написано 250+ новых слов (w.full) или она отметила утренний шаг (m.fin) */
-const finEssDays = () => Object.keys(state.days || {}).filter(k => { const d = state.days[k]; return !!(d?.w?.full || d?.m?.fin); });
-function finGoalHTML(P) {
-  const ed = daysTo(ESSAY_DATE); if (P.ph.id !== 'p1' || ed < 2) return '';
-  const n = finEssDays().length, left = Math.max(0, ESS_GOAL - n), every = left ? Math.max(1, Math.floor((ed - 1) / left)) : 0;
-  const how = every <= 1 ? 'каждый день' : `примерно раз в ${every} ${plural(every, 'день', 'дня', 'дней')}`;
-  return `<div class="fgoal"><div class="row sb small"><b>До итогового ${ed} ${plural(ed, 'день', 'дня', 'дней')}</b><span class="num">сочинений: ${n} из ${ESS_GOAL}</span></div>
-    <div class="bar gold" style="height:6px"><i style="width:${Math.min(1, n / ESS_GOAL) * 100}%"></i></div>
-    <div class="muted small">${left ? `Для спокойного зачёта напиши до 2 декабря ещё ${left} ${plural(left, 'сочинение', 'сочинения', 'сочинений')} целиком - ${how}. Написала на бумаге - нажми кружок у утреннего шага.` : 'Цель выполнена! Дальше - по желанию: лучше закрепи книги и аргументы.'}</div></div>`;
-}
-/* «С возвращением»: показываем, пока сегодня меньше MIN_N заданий и она не нажала «Не сейчас» */
-function backCardHTML() {
-  const t = today(), d = state.days[t] || {};
-  if ((d.n || 0) >= MIN_N || d.pk?.backHide || !Object.keys(state.ans || {}).length) return '';
-  let good = 0; for (let i = 1; i <= 5; i++) if (dayCounts(addDays(t, -i))) good++;
-  if (good >= 2) return '';
-  return `<section class="card" style="border-left:5px solid var(--gold)"><h2 class="h2">С возвращением!</h2>
-    <p style="margin:0">Последние дни получалось мало - так бывает. Не догоняем всё сразу: начни с ${MIN_N} заданий по русскому, это минут пять. Сделаешь - день засчитан, а дальше по силам.</p>
-    <div class="row"><button class="btn primary" data-a="five">${ic('play', 18)} ${MIN_N} заданий - начать</button><button class="btn sm ghost" data-a="backHide">Не сейчас</button></div></section>`;
-}
-/* 5 минут - всегда русский (главный предмет для 80+): сначала его ошибки на сегодня, потом задание, которое она проходит.
-   Предмет вечера (общество, английский) не берём: там бывает новая тема с теорией - для лёгкого старта тяжело */
-function fivePool() {
-  const n = ruTopic(), pool = n ? ruPool(n) : orthoPool();
-  const errs = errDue().filter(e => errGroup(e) === 'ru').map(e => e.id).filter(id => getItem(id));
-  return [...new Set([...errs, ...pool])];
-}
-/* упрямые ошибки: не выучены и ошибок STUB_MIN и больше */
-const stubList = () => errList().filter(e => !e.learned && (e.wrong || 0) >= STUB_MIN && getItem(e.id)).sort((a, b) => (b.wrong || 0) - (a.wrong || 0));
-function stubbornCardHTML(home) {
-  const L = stubList(); if (!L.length) return '';
-  const rows = L.slice(0, home ? 2 : 10).map(e => {
-    const it = getItem(e.id), tip = it.type === 'stress' && typeof STRESS_NOTE !== 'undefined' ? (STRESS_NOTE[it.w]?.[1] || '') : '';
-    return `<div class="stub"><div class="muted small">${esc(itemLabel(it))} · ошибок: ${e.wrong}</div><div class="stub-a">${e.my ? `<s>${esc(e.my)}</s> ${ic('right', 14)} ` : ''}<b>${esc(correctText(it))}</b></div>${tip ? `<div class="small">${md(tip)}</div>` : ''}</div>`;
-  }).join('');
-  const more = home && L.length > 2 ? `<button class="linkbtn" data-a="tab" data-t="err">Все упрямые: ${L.length} ${ic('right', 16)}</button>` : '';
-  return `<section class="card" style="border-left:5px solid var(--bad)"><div class="row sb"><h2 class="h2">Упрямые ошибки</h2><span class="kicker">${L.length}</span></div>
-    <p class="muted small" style="margin:0">Здесь ты ошибалась ${STUB_MIN} раза и больше. Прочитай верный ответ вслух - и сразу прорешай.</p>
-    <div>${rows}</div>${more}
-    <button class="btn block" data-a="stubGo">${ic('repeat', 18)} Прорешать упрямые: ${L.length}</button></section>`;
-}
-const vErr1 = vErr;
-vErr = function () {
-  const h = vErr1(), c = stubbornCardHTML(false); if (!c) return h;
-  const at = h.indexOf('<section class="stack">');
-  return at >= 0 ? h.slice(0, at) + c + h.slice(at) : h + c;
-};
-Object.assign(A, {
-  five: () => startPool(`Русский: ${MIN_N} заданий - лёгкий старт`, fivePool(), MIN_N),
-  backHide: () => { const d = day(); d.pk = { ...(d.pk || {}), backHide: 1 }; save(); render(); },
-  stubGo: () => { const ids = stubList().map(e => e.id); if (ids.length) startPool('Упрямые ошибки', ids, ids.length); },
-});

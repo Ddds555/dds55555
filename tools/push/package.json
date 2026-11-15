@@ -1,0 +1,9 @@
+{
+  "name": "ege100-reminders",
+  "private": true,
+  "description": "Напоминания «ЕГЭ на 100»: отправка web push из GitHub Actions (remind.mjs)",
+  "type": "module",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

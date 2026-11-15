@@ -23,8 +23,8 @@ label.btn{cursor:pointer}
 .codebox{width:100%;min-height:120px;border:2px solid var(--line);border-radius:14px;background:var(--paper-2);padding:10px 12px;font:500 13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);word-break:break-all;resize:vertical}
 #upd{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:45;background:var(--ink);color:var(--bg);border-radius:16px;padding:8px 8px 8px 16px;display:flex;gap:12px;align-items:center;font-weight:800;box-shadow:var(--shadow);max-width:calc(100% - 32px);white-space:nowrap}
 /* «Сочинение» - самое длинное слово на панели: его колонка пошире, на узких экранах шрифт вкладок чуть меньше */
-#tabs{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) repeat(4,minmax(0,1fr))}
-@media (max-width:400px){.tab{font-size:11px}}
+#tabs{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) repeat(5,minmax(0,1fr));padding-left:2px;padding-right:2px}
+@media (max-width:400px){#tabs .tab{font-size:10px;letter-spacing:-.02em}#tabs .tab svg{width:22px;height:22px}}
 @media (max-width:340px){.tab{font-size:10px;letter-spacing:-.01em}}
 /* разделы сочинения (6 штук) - в две строки на телефоне */
 .seg.many button{padding:10px 8px}
@@ -118,3 +118,40 @@ details.more[open]>summary{margin-bottom:16px}
 .stub-a{font-size:18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
 .stub-a s{color:var(--muted)}
 .stub-a b{color:var(--good)}
+/* 15.11.2026: порции плана, сочинение недели, 7 вкладок, кабинет «Копилка» */
+span.pchk{cursor:default}
+.pstep:not(.done):not(.cur) .pchk{border-color:var(--line);color:var(--muted)}
+.pstep.cur .pchk{background:var(--rose-soft)}
+.pstep.ess{border-top:1px dashed var(--line);border-bottom:0;margin-top:2px}
+.pstep:not(.done):not(.cur):not(.ess) .pttl{color:var(--muted);font-size:16px}
+#tabs .tab{font-size:10.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.bank .coin{font-size:40px;line-height:1.1}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{display:grid;gap:2px;padding:12px 14px;border-radius:16px;background:var(--paper-2)}
+.tile b{font:700 22px/1.15 var(--display);color:var(--ink)}
+.tile span{font-size:14px;line-height:1.3;color:var(--muted)}
+.grow{display:grid;gap:6px;padding:8px 0}
+.grow .up{color:var(--good);font-weight:800}
+.grow .down{color:var(--bad);font-weight:800}
+.gbars{display:grid;gap:3px}
+.gbars i{display:block;height:7px;border-radius:99px;background:var(--line)}
+.gbars i.now{background:var(--good)}
+.cal{display:grid;gap:6px}
+.cal-h,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.cal-h span{text-align:center;font:800 12px var(--body);color:var(--muted)}
+.cal-g i,.cal-l i{display:block;aspect-ratio:1;border-radius:8px;background:var(--paper-2)}
+.cal-g i.l1,.cal-l i.l1{background:var(--gold-soft)}
+.cal-g i.l2,.cal-l i.l2{background:#9FD9B8}
+.cal-g i.l3,.cal-l i.l3{background:var(--good)}
+.cal-g i.fut{background:none;border:1.5px dashed var(--line)}
+.cal-g i.today{box-shadow:0 0 0 2.5px var(--rose)}
+.cal-l{display:flex;flex-wrap:wrap;gap:6px 14px}
+.cal-l span{display:inline-flex;align-items:center;gap:6px}
+.cal-l i{width:14px;height:14px;border-radius:4px}
+.sers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.ser{display:grid;justify-items:center;gap:1px;padding:10px 4px;border-radius:14px;border:2px solid var(--line);text-align:center}
+.ser b{font:700 22px/1 var(--display)}
+.ser span{font-size:12px;color:var(--muted)}
+.ser em{font-style:normal;font-weight:800;font-size:13px;color:var(--gold)}
+.ser.on{border-color:var(--good);background:var(--good-soft)}
+.ser.on em{color:var(--good)}

@@ -33,7 +33,7 @@ START = '/* ================= старт ================= */'
 # (Unbounded и Manrope остались только для рисования значка: tools/icon-fonts, tools/make-icons.cjs).
 ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
 # материалы офлайн-версии: подробные пересказы, новые произведения, слова и связки, авторы, русский (ФИПИ-2026, тексты, задания)
-CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js', 'authors.js', 'ru-extra.js', 'navigator.js', 'soc-extra.js', 'soc-ege.js', 'en-ege.js']
+CONTENT = ['details-a.js', 'details-b.js', 'extra-works.js', 'words.js', 'authors.js', 'ru-extra.js', 'navigator.js', 'soc-extra.js', 'soc-ege.js', 'soc-konst.js', 'en-ege.js']
 # название приложения (31.10.2026 она попросила «ЕГЭ на 100»: «на сотку»); в артефакте - «ЕГЭ на 70»
 APP_TITLE = 'ЕГЭ на 100'
 
@@ -103,9 +103,9 @@ PATCHES = [
     ('соответствие: подсчёт верных букв с учётом it.alt',
      'const n = it.a.filter((r, i) => ms[i] === r).length;',
      'const n = it.a.filter((r, i) => matchOk(it, i, ms[i])).length;'),
-    ('вкладка «Сочинение» вместо «Подарков» (подарки - с карточки «Копилка» на главной)',
+    ('вкладка «Сочинение»; «Копилка» - своя вкладка-кабинет (15.11.2026: копилку не найти, «сделай отдельную вкладку, как личный кабинет»)',
      "const TABS = [['home', 'Сегодня', 'home'], ['ru', 'Русский', 'book'], ['soc', 'Общество', 'scale'], ['en', 'English', 'globe'], ['err', 'Ошибки', 'note'], ['gifts', 'Подарки', 'gift']];",
-     "const TABS = [['home', 'Сегодня', 'home'], ['final', 'Сочинение', 'pen'], ['ru', 'Русский', 'book'], ['soc', 'Общество', 'scale'], ['en', 'English', 'globe'], ['err', 'Ошибки', 'note']];"),
+     "const TABS = [['home', 'Сегодня', 'home'], ['final', 'Сочинение', 'pen'], ['ru', 'Русский', 'book'], ['soc', 'Общество', 'scale'], ['en', 'English', 'globe'], ['err', 'Ошибки', 'note'], ['gifts', 'Копилка', 'gift']];"),
     ('вкладка «Сочинение» открывается на разделе, где была в прошлый раз',
      'function setTab(t) { ui.tab = t; ui.stack = []; ui.route = { v: t };',
      "function setTab(t) { ui.tab = t; ui.stack = []; ui.route = t === 'final' ? { v: t, sub: finLastSub() } : { v: t };"),
@@ -287,7 +287,8 @@ def main():
     content = ''.join((TOOLS / 'content' / n).read_text(encoding='utf-8').rstrip() + '\n\n' for n in CONTENT)
     offline = (content + 'const REPORT_CHECKS = ' + json.dumps(checks, ensure_ascii=False) + ';\n'
                + (TOOLS / 'offline.js').read_text(encoding='utf-8').rstrip() + '\n\n'
-               + (TOOLS / 'plan.js').read_text(encoding='utf-8'))
+               + (TOOLS / 'plan.js').read_text(encoding='utf-8').rstrip() + '\n\n'
+               + (TOOLS / 'notify.js').read_text(encoding='utf-8'))
     js = patch(js, START, offline.rstrip() + '\n\n' + START, 'вставка tools/offline.js и tools/plan.js перед «старт»')
     css = css.rstrip() + '\n' + (TOOLS / 'offline.css').read_text(encoding='utf-8')
     # у системного шрифта 800 - это Heavy, слишком жирно для текста: везде, где в стиле 800, ставим 700 (Bold)

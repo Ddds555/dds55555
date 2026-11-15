@@ -1022,6 +1022,12 @@ for (const [tid, add] of Object.entries(SOC_EGE_ADD)) {
   t.theory = [...(t.theory || []), ...add.theory];
   for (const it of add.items) if (!ITEMS[it.id]) addItem('soc:' + tid, { exc: false, ...it, subj: 'soc', task: tid });
 }
+/* Конституция и власть с нуля (tools/content/soc-konst.js; её просьба 15.11.2026 - «с правом западает, объясни Конституцию,
+   кто что делает») - первой темой в «Обществе» и в плане дня */
+if (!SOC_TOPICS.some(t => t.id === SOC_KONST_TOPIC.id)) {
+  SOC_TOPICS.push(SOC_KONST_TOPIC);
+  for (const it of SOC_KONST_TOPIC.items) if (!ITEMS[it.id]) addItem('soc:' + SOC_KONST_TOPIC.id, { exc: false, ...it, subj: 'soc', task: SOC_KONST_TOPIC.id });
+}
 { const pos = id => { const i = SOC_ORDER_IDS.indexOf(id); return i < 0 ? SOC_ORDER_IDS.length : i; }; SOC_TOPICS.sort((a, b) => pos(a.id) - pos(b.id)); }
 for (const [sec, items] of Object.entries(EN_ADD)) for (const it of items) if (!ITEMS[it.id]) addItem('en:' + sec, { exc: false, ...it, subj: 'en', task: sec });
 
