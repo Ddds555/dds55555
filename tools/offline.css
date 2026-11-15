@@ -111,3 +111,10 @@ details.more[open]>summary{margin-bottom:16px}
 .openmy p{margin:0;white-space:pre-line;line-height:1.55}
 .openmodel{white-space:pre-line}
 .scoreb{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px}
+/* 15.11.2026: до итогового (сколько сочинений), упрямые ошибки */
+.fgoal{display:grid;gap:6px;margin-top:10px;padding:12px 14px;border-radius:16px;background:var(--gold-soft)}
+.stub{display:grid;gap:4px;padding:10px 0;border-top:1px solid var(--line)}
+.stub:first-child{border-top:0}
+.stub-a{font-size:18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.stub-a s{color:var(--muted)}
+.stub-a b{color:var(--good)}

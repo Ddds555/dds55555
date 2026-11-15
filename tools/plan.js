@@ -157,11 +157,14 @@ function planToday(k = today()) {
 const planNext = P => { const sn = slotNow(); return P.steps.find(s => !s.done && s.si >= sn) || (sn === 2 ? null : P.steps.find(s => !s.done)) || null; };
 /* итог дня для полоски недели: [сделано, всего] */
 function planSnap(P) { const d = day(P.k), v = [P.done, P.steps.length]; if (!d.pl || d.pl[0] !== v[0] || d.pl[1] !== v[1]) { d.pl = v; save(); } }
-/* серия: дни подряд, когда план выполнен целиком; выходные без шагов серию не рвут */
+/* серия: дни подряд, когда план выполнен целиком или сделан хотя бы минимум - MIN_N заданий (15.11.2026: после перерыва
+   три шага в день - много; маленький день тоже засчитывается, чтобы серия не рвалась); выходные без шагов серию не рвут */
+const MIN_N = 5;
+const dayCounts = k => { const d = state.days[k], pl = d?.pl; return !!(pl && pl[1] > 0 && pl[0] >= pl[1]) || (d?.n || 0) >= MIN_N; };
 function planStreak() {
-  let k = today(), n = 0; const full = x => x && x[1] > 0 && x[0] >= x[1], rest = x => x && x[1] === 0;
-  if (!full(state.days[k]?.pl)) k = addDays(k, -1);
-  for (let i = 0; i < 400; i++, k = addDays(k, -1)) { const pl = state.days[k]?.pl; if (full(pl)) n++; else if (!rest(pl)) break; }
+  let k = today(), n = 0; const rest = x => x && x[1] === 0;
+  if (!dayCounts(k)) k = addDays(k, -1);
+  for (let i = 0; i < 400; i++, k = addDays(k, -1)) { if (dayCounts(k)) n++; else if (!rest(state.days[k]?.pl)) break; }
   return n;
 }
 
@@ -190,7 +193,7 @@ document.addEventListener('input', e => {
 
 /* ---- главный экран ---- */
 ICONS.right = '<path d="M9 5l7 7-7 7"/>';
-const COVER_LINES = ['Цель - сотка. Каждый день по шагу.', 'Сотка складывается из маленьких дней.', 'Не идеально, а каждый день.', 'Сделала план дня - день засчитан.', 'Три шага сегодня - это баллы в мае.', 'Ты уже в пути. Просто следующий шаг.'];
+const COVER_LINES = ['Цель - сотка, минимум 80+. Каждый день по шагу.', 'Сотка складывается из маленьких дней.', 'Не идеально, а каждый день.', 'Сделала план дня - день засчитан.', 'Три шага сегодня - это баллы в мае.', 'Ты уже в пути. Просто следующий шаг.'];
 function coverHTML() {
   const ed = daysTo(ESSAY_DATE), xd = daysTo(EXAM_DATE), n = Math.round(D(today()) / 864e5);
   return `<section class="cover">
@@ -231,6 +234,8 @@ function planCardHTML(P) {
     <div class="bar"><i style="width:${n ? P.done / n * 100 : 0}%"></i></div>
     <div class="muted small">${left.length ? 'Утро - сочинение, день - чтение, вечер - лёгкое.' : 'Всё сделано - день засчитан!'} Вечера: ${eveLine}.</div>
     <div>${P.steps.map(s => planStepHTML(s, s === nx)).join('')}</div>
+    ${finGoalHTML(P)}
+    ${left.length ? `<button class="linkbtn" data-a="five">Мало сил? ${MIN_N} заданий по русскому - 5 минут, день засчитан ${ic('right', 16)}</button>` : ''}
     ${orthoLineHTML(P)}
     ${errLineHTML(P, due)}
     ${left.length ? '' : `<div class="pdone">${ic('star', 22)}<div><b>План дня выполнен!</b><div class="small">Завтра - следующие три шага.</div></div></div>`}
@@ -240,10 +245,11 @@ function planCardHTML(P) {
 function weekHTML() {
   const t = today(), mon = addDays(t, -((D(t).getDay() + 6) % 7)), names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], st = planStreak();
   const cells = names.map((nm, i) => {
-    const k = addDays(mon, i), pl = state.days[k]?.pl, cls = k > t ? 'fut' : pl && pl[1] > 0 && pl[0] >= pl[1] ? 'full' : pl && pl[1] === 0 ? 'rest' : pl && pl[0] ? 'part' : '';
+    const k = addDays(mon, i), pl = state.days[k]?.pl, cls = k > t ? 'fut' : dayCounts(k) ? 'full' : pl && pl[1] === 0 ? 'rest' : (pl && pl[0]) || state.days[k]?.n ? 'part' : '';
     return `<div class="wd ${cls} ${k === t ? 'today' : ''}"><i>${cls === 'full' ? ic('check', 16) : D(k).getDate()}</i><span>${nm}</span></div>`;
   });
-  return `<section class="card"><div class="row sb"><h2 class="h2">Неделя</h2><span class="chip fire">${ic('flame', 16)} ${st ? `${st} ${plural(st, 'день', 'дня', 'дней')} по плану` : 'серия начнётся с плана дня'}</span></div><div class="week">${cells.join('')}</div></section>`;
+  return `<section class="card"><div class="row sb"><h2 class="h2">Неделя</h2><span class="chip fire">${ic('flame', 16)} ${st ? `${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : 'серия начнётся сегодня'}</span></div><div class="week">${cells.join('')}</div>
+    <p class="muted small" style="margin:0">День засчитан, если сделан план дня или хотя бы ${MIN_N} заданий.</p></section>`;
 }
 /* «Где я сейчас»: по каждому предмету - на чём она и сколько пройдено */
 function nowHTML(ph) {
@@ -282,7 +288,9 @@ vHome = function () {
   ${resumeCard()}
   ${iconCardHTML()}
   ${coverHTML()}
+  ${backCardHTML()}
   ${planCardHTML(P)}
+  ${stubbornCardHTML(true)}
   ${nowHTML(P.ph)}
   ${weekHTML()}
   ${moreHTML()}`;
@@ -302,7 +310,7 @@ vSesEnd = function () {
 /* ---- экран «План до ЕГЭ» ---- */
 {
   const m3 = MILESTONES.find(m => m.id === 'm3'), m7 = MILESTONES.find(m => m.id === 'm7');
-  if (m3) m3.t = 'Пробник русского: тест от 22 из 28 - уровень 70';
+  if (m3) m3.t = 'Пробник русского: тест от 22 из 28 - первая ступенька к 80';
   if (m7) m7.t = 'Пробник русского: от 25 из 28 - уровень 80';
   MILESTONES.push(
     { id: 'm10', d: '2027-04-30', t: 'Сочинение ЕГЭ: от 20 из 22', auto: () => state.essays.some(e => (e.result?.total || 0) >= 20) },
@@ -320,7 +328,7 @@ vPlan = function () {
   const socRows = SOC_ORDER().map(x => { const m = mastery('soc:' + x.id), now = socNow()?.id === x.id, ok = m.total && m.seen >= m.total; return prow(`data-a="openTopic" data-id="${esc(x.id)}"`, ok ? ic('check', 20) : ic('scale', 20), ok ? 'done' : now ? '' : 'theory', esc(x.title), now ? 'сейчас' : ok ? 'пройдено' : 'дальше', `${m.seen}/${m.total}`); }).join('');
   const enRows = EN_LIST().map(x => { const m = mastery('en:' + x.id), now = enNow()?.id === x.id, ok = m.total && m.seen >= m.total; return prow(`data-a="openEn" data-id="${esc(x.id)}"`, ok ? ic('check', 20) : ic('globe', 20), ok ? 'done' : now ? '' : 'theory', esc(x.title), now ? 'сейчас' : ok ? 'пройдено' : 'дальше', `${m.seen}/${m.total}`); }).join('');
   return `<button class="back" data-a="back">${ic('left', 18)} Назад</button>
-  <header class="stack" style="gap:6px"><div class="kicker">Цель - 100</div><h1 class="h1">План до ЕГЭ</h1><p class="muted" style="margin:0">Каждый день три шага под твой режим: утром сочинение, днём книга, вечером 15 лёгких заданий. Сочинение и чтение отмечаешь сама - кружок слева, вечер отмечается сам.</p></header>
+  <header class="stack" style="gap:6px"><div class="kicker">Цель - 100, минимум 80+</div><h1 class="h1">План до ЕГЭ</h1><p class="muted" style="margin:0">Каждый день три шага под твой режим: утром сочинение, днём книга, вечером 15 лёгких заданий. Сочинение и чтение отмечаешь сама - кружок слева, вечер отмечается сам.</p></header>
   <section class="card" style="border-left:5px solid var(--rose)"><div class="kicker">Сейчас · ${esc(cur.when)}</div><h2 class="h2">${esc(cur.name)}</h2>
     <p style="margin:0"><b>Утро, около 9:00 - сочинение.</b> ${cur.morning === 'fin' ? 'Итоговое: тема дня подобрана к твоим книгам, от 350 слов. Не та тема - «Другая тема».' : 'Сочинение ЕГЭ по тексту (задание 27), от 150 слов.'}${cur.sat ? ' В субботу утром вместо него - пробник.' : ''}</p>
     <p style="margin:0"><b>День - ${cur.day === 'err' ? 'ошибки' : 'чтение'}.</b> ${cur.day === 'err' ? 'Красная тетрадь: что ещё не выучено.' : 'Книга для сочинения. Читаешь не за один день - кружок «почитала»; дочитала - «Прочитала» в карточке и короткий тест.'}</p>
@@ -339,7 +347,7 @@ vPlan = function () {
     ${nx ? `<button class="btn block" data-a="finWork" data-id="${esc(nx.id)}">${ic('book', 18)} ${finReadOf(nx.id) ? 'Закрепить' : 'Следующая'}: «${esc(nx.title)}»${gain ? ` (+${gain} ${plural(gain, 'тема', 'темы', 'тем')})` : ''}</button>` : ''}</section>` : ''}
   <section class="card"><h2 class="h2">Этапы до экзамена</h2><div>${PLAN_PHASES.map(ph => { const now = ph === cur, past = t > ph.to; return `<div class="ph ${now ? 'now' : past ? 'past' : ''}"><span class="phd">${past ? ic('check', 14) : ''}</span><div style="min-width:0"><div class="row sb"><b>${esc(ph.name)}</b>${now ? '<span class="chip fire">сейчас</span>' : ''}</div><div class="muted small">${esc(ph.when)}</div>${now ? '' : `<p class="small" style="margin:4px 0 0">${esc(ph.focus)}</p>`}</div></div>`; }).join('')}</div></section>
   <section class="card"><h2 class="h2">Вехи</h2><div>${MILESTONES.map(m => { const done = msDone(m), late = !done && m.d < t, p = m.pct ? Math.max(0, Math.min(1, m.pct())) : null; return `<div class="ms"><button class="chk ${done ? 'on' : ''}" style="border:0;padding:0;width:auto" data-a="msTog" data-id="${m.id}" aria-label="Отметить"><span class="box">${ic('check', 18)}</span></button><div style="min-width:0"><div style="font-weight:800;${done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.t)}</div>${p != null && !done ? `<div class="bar" style="height:6px;margin-top:6px"><i style="width:${p * 100}%"></i></div>` : ''}</div><span class="when" style="${late ? 'color:var(--bad)' : ''}">до ${fmtD(m.d)}</span></div>`; }).join('')}</div></section>
-  <section class="card"><h2 class="h2">Сколько нужно на 100</h2><p style="margin:0">100 баллов по русскому - это все <b>50 первичных</b>: 28 за тестовую часть и 22 за сочинение. Ступеньки (шкала 2026 года, примерно): 70 баллов - около 38 первичных, 80 - около 43, 90 - около 47.</p><p class="muted small" style="margin:0">Итоговое сочинение - это зачёт или незачёт: допуск к ЕГЭ, баллы за него не ставят.</p></section>
+  <section class="card"><h2 class="h2">Сколько нужно на 80+ и на 100</h2><p style="margin:0">100 баллов по русскому - это все <b>50 первичных</b>: 28 за тестовую часть и 22 за сочинение. <b>80 баллов - около 43 первичных</b>, например тест 25 из 28 и сочинение 18 из 22. 90 - около 47. Шкала 2026 года, примерно.</p><p class="muted small" style="margin:0">Итоговое сочинение - это зачёт или незачёт: допуск к ЕГЭ, баллы за него не ставят.</p></section>
   ${next ? '' : '<section class="card celebrate"><div class="h2">Все вехи взяты!</div></section>'}`;
 };
 
@@ -435,3 +443,66 @@ vErr = function () {
   const at = h.indexOf('<section class="stack">');
   return at >= 0 ? h.slice(0, at) + card + h.slice(at) : h + card;
 };
+
+/* ================= 15.11.2026: доработки после перерыва =================
+   Её просьба: «повтори всё и внеси доработки», цель - «на 100 и 80 плюс», итоговое - 2 декабря.
+   По её данным: с 9 ноября почти не занималась (за неделю 13 заданий), сочинение целиком отмечено одно (7 ноября),
+   «освЕдомиться» - 7 ошибок. Поэтому:
+   1) «С возвращением»: за последние 5 дней минимум (MIN_N заданий или план) был меньше чем в 2 днях - старт на 5 минут, без упрёков.
+   2) «5 минут» под планом всегда; день с MIN_N заданиями засчитывается в серию (dayCounts, planStreak).
+   3) До итогового: сколько сочинений целиком уже написано, цель - ESS_GOAL к 2 декабря.
+   4) «Упрямые ошибки»: ошибалась STUB_MIN раза и больше - верный ответ на виду и прорешать отдельно. */
+const ESS_GOAL = 5;
+const STUB_MIN = 3;
+/* сочинения итогового целиком: дни, когда в поле написано 250+ новых слов (w.full) или она отметила утренний шаг (m.fin) */
+const finEssDays = () => Object.keys(state.days || {}).filter(k => { const d = state.days[k]; return !!(d?.w?.full || d?.m?.fin); });
+function finGoalHTML(P) {
+  const ed = daysTo(ESSAY_DATE); if (P.ph.id !== 'p1' || ed < 2) return '';
+  const n = finEssDays().length, left = Math.max(0, ESS_GOAL - n), every = left ? Math.max(1, Math.floor((ed - 1) / left)) : 0;
+  const how = every <= 1 ? 'каждый день' : `примерно раз в ${every} ${plural(every, 'день', 'дня', 'дней')}`;
+  return `<div class="fgoal"><div class="row sb small"><b>До итогового ${ed} ${plural(ed, 'день', 'дня', 'дней')}</b><span class="num">сочинений: ${n} из ${ESS_GOAL}</span></div>
+    <div class="bar gold" style="height:6px"><i style="width:${Math.min(1, n / ESS_GOAL) * 100}%"></i></div>
+    <div class="muted small">${left ? `Для спокойного зачёта напиши до 2 декабря ещё ${left} ${plural(left, 'сочинение', 'сочинения', 'сочинений')} целиком - ${how}. Написала на бумаге - нажми кружок у утреннего шага.` : 'Цель выполнена! Дальше - по желанию: лучше закрепи книги и аргументы.'}</div></div>`;
+}
+/* «С возвращением»: показываем, пока сегодня меньше MIN_N заданий и она не нажала «Не сейчас» */
+function backCardHTML() {
+  const t = today(), d = state.days[t] || {};
+  if ((d.n || 0) >= MIN_N || d.pk?.backHide || !Object.keys(state.ans || {}).length) return '';
+  let good = 0; for (let i = 1; i <= 5; i++) if (dayCounts(addDays(t, -i))) good++;
+  if (good >= 2) return '';
+  return `<section class="card" style="border-left:5px solid var(--gold)"><h2 class="h2">С возвращением!</h2>
+    <p style="margin:0">Последние дни получалось мало - так бывает. Не догоняем всё сразу: начни с ${MIN_N} заданий по русскому, это минут пять. Сделаешь - день засчитан, а дальше по силам.</p>
+    <div class="row"><button class="btn primary" data-a="five">${ic('play', 18)} ${MIN_N} заданий - начать</button><button class="btn sm ghost" data-a="backHide">Не сейчас</button></div></section>`;
+}
+/* 5 минут - всегда русский (главный предмет для 80+): сначала его ошибки на сегодня, потом задание, которое она проходит.
+   Предмет вечера (общество, английский) не берём: там бывает новая тема с теорией - для лёгкого старта тяжело */
+function fivePool() {
+  const n = ruTopic(), pool = n ? ruPool(n) : orthoPool();
+  const errs = errDue().filter(e => errGroup(e) === 'ru').map(e => e.id).filter(id => getItem(id));
+  return [...new Set([...errs, ...pool])];
+}
+/* упрямые ошибки: не выучены и ошибок STUB_MIN и больше */
+const stubList = () => errList().filter(e => !e.learned && (e.wrong || 0) >= STUB_MIN && getItem(e.id)).sort((a, b) => (b.wrong || 0) - (a.wrong || 0));
+function stubbornCardHTML(home) {
+  const L = stubList(); if (!L.length) return '';
+  const rows = L.slice(0, home ? 2 : 10).map(e => {
+    const it = getItem(e.id), tip = it.type === 'stress' && typeof STRESS_NOTE !== 'undefined' ? (STRESS_NOTE[it.w]?.[1] || '') : '';
+    return `<div class="stub"><div class="muted small">${esc(itemLabel(it))} · ошибок: ${e.wrong}</div><div class="stub-a">${e.my ? `<s>${esc(e.my)}</s> ${ic('right', 14)} ` : ''}<b>${esc(correctText(it))}</b></div>${tip ? `<div class="small">${md(tip)}</div>` : ''}</div>`;
+  }).join('');
+  const more = home && L.length > 2 ? `<button class="linkbtn" data-a="tab" data-t="err">Все упрямые: ${L.length} ${ic('right', 16)}</button>` : '';
+  return `<section class="card" style="border-left:5px solid var(--bad)"><div class="row sb"><h2 class="h2">Упрямые ошибки</h2><span class="kicker">${L.length}</span></div>
+    <p class="muted small" style="margin:0">Здесь ты ошибалась ${STUB_MIN} раза и больше. Прочитай верный ответ вслух - и сразу прорешай.</p>
+    <div>${rows}</div>${more}
+    <button class="btn block" data-a="stubGo">${ic('repeat', 18)} Прорешать упрямые: ${L.length}</button></section>`;
+}
+const vErr1 = vErr;
+vErr = function () {
+  const h = vErr1(), c = stubbornCardHTML(false); if (!c) return h;
+  const at = h.indexOf('<section class="stack">');
+  return at >= 0 ? h.slice(0, at) + c + h.slice(at) : h + c;
+};
+Object.assign(A, {
+  five: () => startPool(`Русский: ${MIN_N} заданий - лёгкий старт`, fivePool(), MIN_N),
+  backHide: () => { const d = day(); d.pk = { ...(d.pk || {}), backHide: 1 }; save(); render(); },
+  stubGo: () => { const ids = stubList().map(e => e.id); if (ids.length) startPool('Упрямые ошибки', ids, ids.length); },
+});
