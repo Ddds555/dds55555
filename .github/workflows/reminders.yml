@@ -1,0 +1,53 @@
+# Напоминания на телефон «ЕГЭ на 100» (15.11.2026). Время - по Москве (UTC+3), GitHub может запускать на 5-20 минут позже.
+# Перед каждым напоминанием tools/push/remind.mjs смотрит, занималась ли она сегодня: норма сделана или занималась
+# недавно - напоминания нет. Секреты: VAPID_PRIVATE (закрытый ключ), PUSH_CODE (код подписки из приложения).
+# Проверить руками: Actions -> «Напоминания на телефон» -> Run workflow (mode: test - пробное, dry: 1 - только показать решение).
+# Важно: в публичном репозитории GitHub выключает расписание, если в репозитории 60 дней не было коммитов.
+name: Напоминания на телефон
+
+on:
+  schedule:
+    - cron: '47 4 * * 1-5'   # 7:47 МСК, будни - до уроков
+    - cron: '41 9 * * *'     # 12:41 МСК - перемена; в выходные - сочинение недели
+    - cron: '3 16 * * *'     # 19:03 МСК - вечер
+    - cron: '47 17 * * *'    # 20:47 МСК - повтор, если день ещё не засчитан
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'auto - как по расписанию; test - пробное; morning, day, evening, late - как в это время'
+        required: false
+        default: 'test'
+      dry:
+        description: '1 - только показать решение, не отправлять'
+        required: false
+        default: '0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/push
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: web-push
+        working-directory: tools/push
+        run: npm install --no-audit --no-fund --loglevel=error
+      - name: Напомнить, если нужно
+        working-directory: tools/push
+        env:
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          PUSH_CODE: ${{ secrets.PUSH_CODE }}
+          MODE: ${{ github.event.inputs.mode || 'auto' }}
+          DRY: ${{ github.event.inputs.dry || '0' }}
+        run: node remind.mjs
