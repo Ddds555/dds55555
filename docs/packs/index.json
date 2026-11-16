@@ -7,19 +7,19 @@
    "n": 52,
    "ver": 1,
    "file": "ru-d36-1.bin",
-   "iv": "HH2BL9BtD+5As5i0",
+   "iv": "FLzcUwEhAmWQgq3C",
    "wraps": [
     {
      "kind": "topic",
-     "salt": "QlyAasvGd92VGT6AqtrFdg==",
-     "iv": "pHOacgkxKddQAbi2",
-     "key": "1z102RI00ZWZCSrZSrRUOJuoJZkBnrtlPCKmgm4FgO8Cgmt5qSAR8blrvDoEJur9"
+     "salt": "veORRBG9dFRCb1FHENoWeg==",
+     "iv": "q2oogl5RnxnVGlny",
+     "key": "Zpcc07PNKVitkz5/Pa8L2/8STwtPcQyPPtaW6kSKDOIMoGe9a2ruYceq9iB780ZL"
     },
     {
      "kind": "code",
-     "salt": "wQXx8aKgK98q6Pe/PSkdfg==",
-     "iv": "3pG3F9P+k/EchkUz",
-     "key": "9SNCUttOLchvwC35w+0QUM3aMWfH/GVN8CbkyNdstZxZdElj9Ijl28E9q7xL4X9v"
+     "salt": "WYOOGhEetx/luPbfuHR7ZA==",
+     "iv": "qVdIbtec7pnpfn68",
+     "key": "O2+f5ifRLKekrU+IcgdafKaKuzUpIAob2xE/i9THfTQE6GUFzDloX7QrHyau1BYQ"
     }
    ]
   },
@@ -27,21 +27,21 @@
    "id": "ru-fipi",
    "title": "Открытый банк ФИПИ",
    "n": 1923,
-   "ver": 3,
-   "file": "ru-fipi-3.bin",
-   "iv": "HFp6MNWiOhNvXIIt",
+   "ver": 4,
+   "file": "ru-fipi-4.bin",
+   "iv": "l1BZW6ERTeDs6oxK",
    "wraps": [
     {
      "kind": "topic",
-     "salt": "sBVO3zVglT3Njubp7calNw==",
-     "iv": "pHKRiCaJvQfAkchV",
-     "key": "w+JBn9PMonKGKwhaKgmPDv5D3l8+zXCanOqEj/c/i6tAEE/IvMTHFT8qwjQgsCeL"
+     "salt": "RdNQU+QN62oc7na6vy+XDA==",
+     "iv": "JybtTOrz7w+kVgxh",
+     "key": "FandTY6nPqXT1V1Pgbrl1+xOcPhSovS0ODl29/y0NiYqBv2TDxTfKrC8aSYl9w7q"
     },
     {
      "kind": "code",
-     "salt": "53U2GWyUleaBGDgEHXmMjQ==",
-     "iv": "30p6d0mA+OPGuTzf",
-     "key": "JjHJwheBMMbMPaow98H7yJ//BnnVXHDkbytsOcWYFzg/0S1R8/YSwMYYWtXCsfv/"
+     "salt": "O/Oxm4P3nmq0jMF0A8JIvA==",
+     "iv": "xviHMAt/MgP2ouWd",
+     "key": "5EaeAPEPt0EajNzHGhOQ1Wl6ZryIJLjRStbhgg4vY6TVsrG/ouTR+6r9imTpQKrU"
     }
    ]
   }
