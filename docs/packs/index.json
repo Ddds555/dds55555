@@ -1,0 +1,49 @@
+{
+ "v": 1,
+ "packs": [
+  {
+   "id": "ru-d36",
+   "title": "ЕГЭ 2027: 36 типовых вариантов",
+   "n": 52,
+   "ver": 1,
+   "file": "ru-d36-1.bin",
+   "iv": "HH2BL9BtD+5As5i0",
+   "wraps": [
+    {
+     "kind": "topic",
+     "salt": "QlyAasvGd92VGT6AqtrFdg==",
+     "iv": "pHOacgkxKddQAbi2",
+     "key": "1z102RI00ZWZCSrZSrRUOJuoJZkBnrtlPCKmgm4FgO8Cgmt5qSAR8blrvDoEJur9"
+    },
+    {
+     "kind": "code",
+     "salt": "wQXx8aKgK98q6Pe/PSkdfg==",
+     "iv": "3pG3F9P+k/EchkUz",
+     "key": "9SNCUttOLchvwC35w+0QUM3aMWfH/GVN8CbkyNdstZxZdElj9Ijl28E9q7xL4X9v"
+    }
+   ]
+  },
+  {
+   "id": "ru-fipi",
+   "title": "Открытый банк ФИПИ",
+   "n": 1923,
+   "ver": 3,
+   "file": "ru-fipi-3.bin",
+   "iv": "HFp6MNWiOhNvXIIt",
+   "wraps": [
+    {
+     "kind": "topic",
+     "salt": "sBVO3zVglT3Njubp7calNw==",
+     "iv": "pHKRiCaJvQfAkchV",
+     "key": "w+JBn9PMonKGKwhaKgmPDv5D3l8+zXCanOqEj/c/i6tAEE/IvMTHFT8qwjQgsCeL"
+    },
+    {
+     "kind": "code",
+     "salt": "53U2GWyUleaBGDgEHXmMjQ==",
+     "iv": "30p6d0mA+OPGuTzf",
+     "key": "JjHJwheBMMbMPaow98H7yJ//BnnVXHDkbytsOcWYFzg/0S1R8/YSwMYYWtXCsfv/"
+    }
+   ]
+  }
+ ]
+}

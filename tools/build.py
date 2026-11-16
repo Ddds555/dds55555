@@ -288,7 +288,8 @@ def main():
     offline = (content + 'const REPORT_CHECKS = ' + json.dumps(checks, ensure_ascii=False) + ';\n'
                + (TOOLS / 'offline.js').read_text(encoding='utf-8').rstrip() + '\n\n'
                + (TOOLS / 'plan.js').read_text(encoding='utf-8').rstrip() + '\n\n'
-               + (TOOLS / 'notify.js').read_text(encoding='utf-8'))
+               + (TOOLS / 'notify.js').read_text(encoding='utf-8').rstrip() + '\n\n'
+               + (TOOLS / 'packs.js').read_text(encoding='utf-8'))
     js = patch(js, START, offline.rstrip() + '\n\n' + START, 'вставка tools/offline.js и tools/plan.js перед «старт»')
     css = css.rstrip() + '\n' + (TOOLS / 'offline.css').read_text(encoding='utf-8')
     # у системного шрифта 800 - это Heavy, слишком жирно для текста: везде, где в стиле 800, ставим 700 (Bold)

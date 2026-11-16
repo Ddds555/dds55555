@@ -447,13 +447,13 @@ importText = async function (text) {
 /* карточка пакета на экране предмета (русский - на «Русском», обществознание - на «Обществе») */
 function packCards(sj) {
   return Object.values(PACKS).filter(p => p.subj === sj).map(p => `<section class="card" style="border-left:5px solid var(--rose)"><div class="row sb"><h2 class="h2">${esc(p.title)}</h2><span class="kicker">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')}</span></div>
-    <p class="muted small" style="margin:0">Из твоего файла: ${p.vars.length} ${plural(p.vars.length, 'вариант', 'варианта', 'вариантов')}, задания ${packTaskList(p.tasks)} с ответами${sj === 'soc' && p.tasks.some(t => t > 16) ? ', часть 2 - с образцом ответа ФИПИ' : ' и разбором'}. Решай по номерам заданий, как на ЕГЭ, или вариант целиком.</p>
+    <p class="muted small" style="margin:0">${p.vars.length ? `${p.vars.length} ${plural(p.vars.length, 'вариант', 'варианта', 'вариантов')}, з` : 'З'}адания ${packTaskList(p.tasks)} с ответами${sj === 'soc' && p.tasks.some(t => t > 16) ? ', часть 2 - с образцом ответа ФИПИ' : ' и разбором'}. ${p.vars.length ? 'Решай по номерам заданий, как на ЕГЭ, или вариант целиком.' : 'Решай по номерам заданий.'}</p>
     <button class="btn primary block" data-a="openPack" data-id="${esc(p.id)}">${ic('play', 18)} Открыть задания</button></section>`).join('');
 }
 const packInject = (h, c) => { if (!c) return h; const i = h.indexOf('</header>'); return i < 0 ? c + h : h.slice(0, i + 9) + c + h.slice(i + 9); };
 function vPack(r) {
   const p = PACKS[r.id] || Object.values(PACKS)[0]; if (!p) return vRu();
-  const sub = r.sub === 'var' ? 'var' : 'task';
+  const sub = r.sub === 'var' && p.vars.length ? 'var' : 'task';
   const st = ids => { const ok = ids.filter(id => itemStatus(id) === 'ok').length, seen = ids.filter(id => itemStatus(id) !== 'new').length; return { ok, seen, n: ids.length }; };
   const taskRow = t => {
     const s = st(packIds(p.id, it => it.task === t)), done = s.seen === s.n && s.ok === s.n;
@@ -466,8 +466,8 @@ function vPack(r) {
   const varsH = `<section class="stack">${p.vars.map(n => { const ids = packIds(p.id, it => it.v === n), s = st(ids);
     return `<button class="trow" data-a="packVar" data-id="${esc(p.id)}" data-n="${n}"><span class="tnum ${s.n && s.seen === s.n && s.ok === s.n ? 'done' : ''}">${n}</span><span style="min-width:0"><span class="ttl">Вариант ${n}</span><br><span class="tmeta">${s.seen ? `решено ${s.seen} из ${s.n} · верно ${s.ok}` : `задания ${packTaskList([...new Set(ids.map(id => ITEMS[id].task))])}`}</span></span><span class="pts num">${s.ok}/${s.n}</span></button>`; }).join('')}</section>`;
   return `<button class="back" data-a="back">${ic('left', 18)} Назад</button>
-  <header class="stack" style="gap:6px"><div class="kicker">Из твоего файла · только на этом устройстве</div><h1 class="h1">${esc(p.title)}</h1><p class="muted" style="margin:0">По номерам - одно задание ЕГЭ из всех вариантов подряд: так быстрее набить руку. Вариант целиком - задания по порядку, как на экзамене. Ответ и разбор - сразу после задания, ошибки идут в красную тетрадь.</p></header>
-  <div class="seg" role="tablist">${[['task', 'По номерам'], ['var', `Варианты (${p.vars.length})`]].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" role="tab" aria-selected="${sub === k}" data-a="sub" data-s="${k}">${l}</button>`).join('')}</div>
+  <header class="stack" style="gap:6px"><div class="kicker">Настоящие задания ЕГЭ · только на этом устройстве</div><h1 class="h1">${esc(p.title)}</h1><p class="muted" style="margin:0">${p.vars.length ? 'По номерам - одно задание ЕГЭ из всех вариантов подряд: так быстрее набить руку. Вариант целиком - задания по порядку, как на экзамене.' : 'Выбери номер задания - будут задания этого номера по 10 подряд.'} Ответ и разбор - сразу после задания, ошибки идут в красную тетрадь.</p></header>
+  ${p.vars.length ? `<div class="seg" role="tablist">${[['task', 'По номерам'], ['var', `Варианты (${p.vars.length})`]].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" role="tab" aria-selected="${sub === k}" data-a="sub" data-s="${k}">${l}</button>`).join('')}</div>` : ''}
   ${sub === 'task' ? tasksH : varsH}`;
 }
 const vRu0 = vRu;

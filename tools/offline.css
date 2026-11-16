@@ -155,3 +155,5 @@ span.pchk{cursor:default}
 .ser em{font-style:normal;font-weight:800;font-size:13px;color:var(--gold)}
 .ser.on{border-color:var(--good);background:var(--good-soft)}
 .ser.on em{color:var(--good)}
+/* выделенные слова в текстах заданий ЕГЭ (packs.js) */
+.txtbody b.hl{font-weight:800;text-decoration:underline;text-underline-offset:3px}
