@@ -7,19 +7,19 @@
    "n": 936,
    "ver": 6,
    "file": "ru-d36-6.bin",
-   "iv": "Qx1V19TdL/mBaiTh",
+   "iv": "4USjJyQRYZ/ip/2S",
    "wraps": [
     {
      "kind": "topic",
-     "salt": "Azq20PPb0vr4QSbYVy8X4A==",
-     "iv": "Iwez9mAfOSYECktW",
-     "key": "L8Yj3kQcjNxTcqdNtukyNGZejTMCc6g+ilHGM++bBYPuOjQmIpeZ7jTB6K5BWx9m"
+     "salt": "Y7+Mh9dw/f6GgCIy+2cKCg==",
+     "iv": "EosGNzQwgGFqmNzi",
+     "key": "aj2iq3K1L6N8lNhBAtrLKIcpKwJ7rUdj7gM68T4B1qVCN7QUIZ581Sdct4K1Mlgi"
     },
     {
      "kind": "code",
-     "salt": "/mZ41ro75iJ8KFcX2+m9rw==",
-     "iv": "QjHdAzCldq/pKJq5",
-     "key": "w3WOdEAdRh1xVKH3XzRJKvhZWu1Jxv2y+Gc4zRuiLwXPJx0yxveLzKYplKpktxfB"
+     "salt": "ilMM3FUW4vnOUFI95Tc1TA==",
+     "iv": "T068BbeEI6AaPhTd",
+     "key": "rGOTLU+u45quS+QTe4lBZuEhAG7F+JoRXEtby5SnOu4IMam7mQYuSv9UNRAaF/aG"
     }
    ]
   },
@@ -29,19 +29,41 @@
    "n": 1923,
    "ver": 4,
    "file": "ru-fipi-4.bin",
-   "iv": "XokSw+57H7FxMwXs",
+   "iv": "5OFRSnTeHrK3tBpb",
    "wraps": [
     {
      "kind": "topic",
-     "salt": "iUBNZNmsM72fLxrjUPcaaQ==",
-     "iv": "f3mXjNQe76GvXLka",
-     "key": "w02BcyhUezvf40LeEZpBq8XW0qaXSGj508PRLbLXGyZaTy+14f2L7PMrabWqnfXC"
+     "salt": "lcKHQUetG5XEqy3wlSAF5g==",
+     "iv": "T6jhU2aWG1eRwrbh",
+     "key": "W0s7YqM4TNfFL2u5eJZOJg+kWJ5uArbaQclid+wQaacLiRYf4jLwEOp1jRhivSYv"
     },
     {
      "kind": "code",
-     "salt": "qsiOQYdgRCeInqmH6Lvkig==",
-     "iv": "xMu7ap7dXEaOfMU7",
-     "key": "cEp8I/eh1wZyRqg+GoP+4P28EkEZI417J/EFV0IAbA3Nxo49bTu/I1G40iapojzR"
+     "salt": "DN3pF4Q2BIPlXkirvPn67A==",
+     "iv": "Rs2DAsGDKFpyJSRS",
+     "key": "+DnDRNJi2qqzzCvZ8xhvdEaC7wGa59BIIiHS0Q89E+yGL8rPPx9OgC5V+IrXB2Ae"
+    }
+   ]
+  },
+  {
+   "id": "ru-sen",
+   "title": "Сенина: ЕГЭ 2027",
+   "n": 260,
+   "ver": 1,
+   "file": "ru-sen-1.bin",
+   "iv": "0e7/WDV6AbmfhexH",
+   "wraps": [
+    {
+     "kind": "topic",
+     "salt": "fcbg9l6b0Cj0zuFnD+xNMA==",
+     "iv": "WvHErmyjREBLwTPY",
+     "key": "RSJxQVfeohtbBGs/VYWc8VHMKjX3tIE+dPbaVRzLhBbEhC6iwvJJWmQuz4XHwXGv"
+    },
+    {
+     "kind": "code",
+     "salt": "9iejHEQeysBZ6UCxH2/i8Q==",
+     "iv": "GBTnPEWxShvULs44",
+     "key": "JMDocuoeEuIyEWs+sMCuOd442Ir0zEwyCMLgaYLiNp4Ey3IaoRuUZyeExw+YYERv"
     }
    ]
   }
