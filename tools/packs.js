@@ -77,3 +77,46 @@ vRu = function () { return packInject(vRuC0(), cloudCard()); };
 const textHTMLc0 = textHTML;
 textHTML = function (it) { return textHTMLc0(it).replace(/\*\*([^*<]{1,80})\*\*/g, '<b class="hl">$1</b>'); };
 packsReady.finally(() => setTimeout(() => { if (navigator.onLine !== false) cloudPacks(); }, 2500));
+
+/* ---- 17.11.2026: настоящие задания - внутри каждого номера 1-26, а не отдельной кучей ----
+   Её слова: «из этих вариантов задание первое у всех 36 вариантов вытащить туда, в задание 1». Задания пакетов и так лежат
+   в ruE:N; здесь - чтобы это было видно: вкладка задания «Задания ЕГЭ · N» (только настоящие, с источниками), число
+   настоящих заданий в списке на «Русском» и одна общая карточка вместо отдельной на каждый сборник. */
+const ruRealIds = n => (TASK_ITEMS['ruE:' + n] || []).filter(id => ITEMS[id]?.pk);
+const packShort = k => PACKS[k]?.short || PACKS[k]?.title || 'сборник';
+const ruRealSrc = ids => { const c = {}; for (const id of ids) c[ITEMS[id].pk] = (c[ITEMS[id].pk] || 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(packShort(k))} - ${n}`).join(', '); };
+const examHTMLp0 = examHTML;
+examHTML = function (t) {
+  const real = ruRealIds(t.n); if (!real.length) return examHTMLp0(t);
+  const key = 'ruE:' + t.n, ok = real.filter(id => itemStatus(id) === 'ok').length, seen = real.filter(id => itemStatus(id) !== 'new').length, pct = ok / real.length;
+  const made = (TASK_ITEMS[key] || []).length - real.length, n10 = Math.min(10, real.length);
+  return `<section class="card">
+    <div class="row sb"><span class="kicker">Настоящие задания ЕГЭ · ${t.pts} ${plural(t.pts, 'балл', 'балла', 'баллов')}</span><span class="num muted small">${Math.round(pct * 100)}%</span></div>
+    <div class="big">${ok}<span>/${real.length}</span></div><div class="bar violet"><i style="width:${pct * 100}%"></i></div>
+    <p class="muted small" style="margin:0">Откуда: ${ruRealSrc(real)}. ${seen ? `Решено ${seen} из ${real.length}.` : 'Ещё не решала.'}${t.pts === 2 ? ' Все 5 верно - 2 балла, 3-4 верно - 1 балл.' : ''} Ответ и разбор - сразу после задания, ошибки уходят в красную тетрадь.</p>
+    <button class="btn primary block" data-a="startReal" data-n="${t.n}">${ic('play', 18)} ${n10} ${plural(n10, 'задание', 'задания', 'заданий')} ЕГЭ</button>
+    ${restBtnHTML(key)}
+    ${made > 0 ? `<p class="muted small" style="margin:0">В «Все оставшиеся» входят ещё ${made} ${plural(made, 'задание', 'задания', 'заданий')} по образцу ЕГЭ, которые составила программа.</p>` : ''}
+  </section>`;
+};
+A.startReal = b => { const n = +b.dataset.n; startPool(`Задание ${n}: задания ЕГЭ`, ruRealIds(n), 10, { key: 'ruE:' + n }); };
+const vTaskP0 = vTask;
+vTask = function (r) {
+  const h = vTaskP0(r), T = ruTask(r?.n), n = T ? ruRealIds(T.n).length : 0;
+  return n ? h.replace(/data-s="exam">Как на ЕГЭ</g, 'data-s="exam">Задания ЕГЭ<') : h;
+};
+const taskRowP0 = taskRow;
+taskRow = function (t) {
+  const h = taskRowP0(t), n = t.n === 27 ? 0 : ruRealIds(t.n).length; if (!n) return h;
+  return h.replace(/(<span class="tmeta">)([^<]*)(<\/span>)/, (m, a, b, c) => `${a}${b} · ${n} ${plural(n, 'задание', 'задания', 'заданий')} ЕГЭ${c}`);
+};
+const packCardsP0 = packCards;
+packCards = function (sj) {
+  if (sj !== 'ru') return packCardsP0(sj);
+  const ps = Object.values(PACKS).filter(p => p.subj === 'ru').sort((a, b) => (a.id === 'ru-fipi' ? -1 : b.id === 'ru-fipi' ? 1 : b.n - a.n));
+  if (!ps.length) return '';
+  const total = ps.reduce((a, p) => a + p.n, 0);
+  return `<section class="card" style="border-left:5px solid var(--rose)"><div class="row sb"><h2 class="h2">Настоящие задания ЕГЭ</h2><span class="kicker">${total} ${plural(total, 'задание', 'задания', 'заданий')}</span></div>
+    <p class="muted small" style="margin:0">Банк ФИПИ и сборники 2027 уже разложены по номерам: открой любое задание ниже - вкладка «Задания ЕГЭ». Они же идут в план дня и в «Продолжить». Только на этом устройстве.</p>
+    <div>${ps.map(p => `<button class="trow" data-a="openPack" data-id="${esc(p.id)}"><span class="tnum">${ic('book', 22)}</span><span style="min-width:0"><span class="ttl">${esc(p.title)}</span><br><span class="tmeta">${p.n} ${plural(p.n, 'задание', 'задания', 'заданий')}${p.vars.length ? ` · ${p.vars.length} ${plural(p.vars.length, 'вариант', 'варианта', 'вариантов')} - можно решить вариант целиком` : ''}</span></span><span class="pts num">${packTaskList(p.tasks)}</span></button>`).join('')}</div></section>`;
+};

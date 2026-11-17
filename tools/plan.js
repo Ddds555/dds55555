@@ -69,11 +69,20 @@ const orthoPool = () => [...new Set(ORTHO.flatMap(n => [...(TASK_ITEMS['ru:' + n
 const ruP = n => state.ruPath?.[n] || {};
 const ruSet = (n, patch) => { state.ruPath = state.ruPath || {}; state.ruPath[n] = { ...(state.ruPath[n] || {}), ...patch }; };
 const ruTopicKey = n => ((TASK_ITEMS['ru:' + n] || []).length ? 'ru:' : 'ruE:') + n;
-/* 25: в тренировке только фразеологизмы ФИПИ - добавляю и задания по текстам (синонимы, антонимы) */
-const ruPool = n => n === 25 ? [...(TASK_ITEMS['ru:25'] || []), ...(TASK_ITEMS['ruE:25'] || [])] : (TASK_ITEMS[ruTopicKey(n)] || []);
+/* 17.11.2026 её просьба: «задание первое из всех вариантов - туда, в задание 1, чтобы нарешивать настоящие». Поэтому в задании
+   всё вместе: тренировка программы (ru:N) и задания ЕГЭ (ruE:N - банк ФИПИ и сборники 2027, у них есть pk - пакет).
+   Задание пройдено, когда решена вся тренировка и не меньше RU_REAL_MIN настоящих заданий этого номера (все - это недели
+   на один номер); остальные настоящие продолжают выпадать в «Продолжить» и есть на экране задания («Задания ЕГЭ»). */
+const RU_REAL_MIN = 40;
+const ruPool = n => [...new Set([...(TASK_ITEMS['ru:' + n] || []), ...(TASK_ITEMS['ruE:' + n] || [])])];
 const ruProg = n => { const ids = ruPool(n); let seen = 0; for (const id of ids) if (itemStatus(id) !== 'new') seen++; return { seen, total: ids.length }; };
 const ruTotal = n => ruPool(n).length;
-const ruPassed = n => { if (ruP(n).done) return true; const p = ruProg(n); return p.total > 0 && p.seen >= p.total; };
+const ruPassed = n => {
+  if (ruP(n).done) return true;
+  const all = ruPool(n); if (!all.length) return false;
+  const seen = id => itemStatus(id) !== 'new', real = all.filter(id => ITEMS[id]?.pk);
+  return all.every(id => ITEMS[id]?.pk || seen(id)) && real.filter(seen).length >= Math.min(real.length, RU_REAL_MIN);
+};
 const ruTheoryOk = n => !!ruP(n).th || ruProg(n).seen >= 10;
 const ruPassedList = () => RU_PATH.filter(ruPassed);
 const ruOpen = n => ruTask(n) && ruPool(n).length && !ruPassed(n);
@@ -322,7 +331,7 @@ vPlan = function () {
   <header class="stack" style="gap:6px"><div class="kicker">Цель - 100, минимум 80+</div><h1 class="h1">План до ЕГЭ</h1><p class="muted" style="margin:0">Каждый день - норма ${NORM} заданий тремя порциями по ${PORTION}: до уроков, на перемене, вечером - когда удобно. Одна порция - и день засчитан. Русский - главный, во вторник, четверг и субботу третья порция - обществознание. В выходные - сочинение недели, по желанию.</p></header>
   <section class="card" style="border-left:5px solid var(--rose)"><div class="kicker">Сейчас · ${esc(cur.when)}</div><h2 class="h2">${esc(cur.name)}</h2><p style="margin:0">${esc(cur.focus)}</p></section>
   <section class="card"><div class="row sb"><h2 class="h2">Русский по заданиям</h2><span class="kicker">${ruDone} из ${RU_PATH.length}</span></div>
-    <p class="muted small" style="margin:0">Идём по порядку: задание - сначала теория, потом все его задания до конца, ошибки повторяются сами. ${nRu ? `Сейчас - задание ${nRu}, «${esc(ruTask(nRu).title)}».` : 'Все задания пройдены!'} Хочешь другое - открой его и нажми «Прочитала - закрепить».</p>
+    <p class="muted small" style="margin:0">Идём по порядку: задание - сначала теория, потом тренировка и настоящие задания ЕГЭ этого номера (из банка ФИПИ и сборников 2027, не меньше ${RU_REAL_MIN}), ошибки повторяются сами. ${nRu ? `Сейчас - задание ${nRu}, «${esc(ruTask(nRu).title)}».` : 'Все задания пройдены!'} Хочешь другое - открой его и нажми «Прочитала - закрепить».</p>
     <div class="bar"><i style="width:${ruDone / RU_PATH.length * 100}%"></i></div>
     ${nRu ? ruRow(nRu) : ''}
     <details class="fbd" data-fd="ru-path" ${open('ru-path')}><summary>Все задания по порядку</summary><div>${RU_PATH.filter(n => ruTask(n)).map(ruRow).join('')}</div></details></section>
